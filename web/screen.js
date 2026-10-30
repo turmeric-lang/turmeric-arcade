@@ -101,8 +101,20 @@ async function boot() {
         stderr: (byte) => streamByte(stderrStream, byte),
     });
     if (m._turi_wasm_init() !== 0) throw new Error('turi_wasm_init failed');
+    // The spices the engine carries, embedded at /spices/<name>/src: each goes
+    // on the module search path, so `(import raylib/core)` resolves
+    // (raylib-web-playground-plan 5.3, prerequisite 9).
+    const spices = [];
+    try {
+        for (const name of m.FS.readdir('/spices')) {
+            if (name === '.' || name === '..') continue;
+            const dir = `/spices/${name}/src`;
+            if (m.FS.analyzePath(dir).exists &&
+                m.ccall('turi_wasm_add_include_dir', 'number', ['string'], [dir]) > 0) spices.push(name);
+        }
+    } catch (_) { /* no /spices: a module without any */ }
     mod = m;
-    return { jspi: 'Suspending' in WebAssembly, ms: performance.now() - t0 };
+    return { jspi: 'Suspending' in WebAssembly, ms: performance.now() - t0, spices };
 }
 
 function cString(str) {

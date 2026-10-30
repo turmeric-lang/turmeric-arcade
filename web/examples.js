@@ -4,6 +4,28 @@
 // stays live is the shape a raylib loop will have.  The plan's examples/ tree
 // (one .tur file per game, read at build time) replaces this table.
 export const EXAMPLES = {
+    raylib: {
+        title: 'Hello, raylib',
+        src: `;; The raylib README's quick start, as a program: the blocking frame loop
+;; runs unchanged on the page because the engine suspends it each frame
+;; (JSPI). The spices are the engine's own; nothing is fetched.
+(defmodule hello
+  (export)
+  (import raylib/core  :refer [init-window window-should-close begin-drawing
+                               end-drawing clear-background])
+  (import raylib/text  :refer [draw-text])
+  (import raylib/color :refer [raywhite black])
+
+  (defn main [] : int
+    (init-window 480 270 "hello")
+    (while (not (window-should-close))
+      (begin-drawing)
+      (clear-background (raywhite))
+      (draw-text "Hello, Turmeric!" 120 120 20 (black))
+      (end-drawing))
+    0))
+`,
+    },
     hello: {
         title: 'Hello',
         src: `(defn main [] : int

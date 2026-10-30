@@ -75,7 +75,8 @@ window.addEventListener('message', (e) => {
             break;
         case 'boot':
             if (m.ok) {
-                status.textContent = `engine up in ${ms(m.ms)}${m.jspi ? '' : ' (no JSPI: a frame loop cannot yield)'}`;
+                const spices = m.spices && m.spices.length ? `, spices: ${m.spices.join(', ')}` : '';
+                status.textContent = `engine up in ${ms(m.ms)}${spices}${m.jspi ? '' : ' (no JSPI: a frame loop cannot yield)'}`;
             } else {
                 status.textContent = '';
                 appendLine(`Error: the engine did not start: ${m.error}`, 'err');

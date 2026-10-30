@@ -4,8 +4,9 @@
 # The engine is turmeric's arcade module (turmeric-jit.{js,wasm}: the
 # compiler's front half, c2mir and MIR's interpreter in their JSPI build, with
 # raylib's web archive linked in), plus stdlib.data, the stdlib package the
-# module mounts, and the spice packages (spices/) with their loader
-# (spices.js), which the screen mounts after start-up.  It is built by
+# module mounts, the spice packages (spices/) with their loader (spices.js),
+# which the screen mounts after start-up, and the editor's language server
+# (lsp-worker.js, running the stock turmeric.{js,wasm}).  It is built by
 # turmeric's tur_wasm_arcade target from a turmeric checkout, never
 # downloaded: turmeric publishes no arcade module.
 #
@@ -69,13 +70,15 @@ OUT=$BUILD/wasm-arcade/wasm-jit
 
 DEST=$ROOT/web/public/engine
 mkdir -p "$DEST"
-for f in turmeric-jit.js turmeric-jit.wasm stdlib.data spices.js; do
+# turmeric.{js,wasm} and lsp-worker.js: the editor's language server.
+for f in turmeric-jit.js turmeric-jit.wasm stdlib.data spices.js turmeric.js turmeric.wasm lsp-worker.js; do
   cp "$OUT/$f" "$DEST/$f"
 done
 # The spice packages (spices/index.json, one <name>.json each), which the
 # screen mounts after the engine has started.
 rm -rf "$DEST/spices"
 cp -R "$OUT/spices" "$DEST/spices"
+grep -q _turi_wasm_lsp_request "$DEST/turmeric.js" || { echo "fetch-engine: turmeric.js carries no language server" >&2; exit 1; }
 grep -q promising "$DEST/turmeric-jit.js" || { echo "fetch-engine: the module is not a JSPI build (no promising export)" >&2; exit 1; }
 printf '{"turmeric":"%s","spices":"%s","raylib":"%s","version":"%s","built":"%s"}\n' \
   "$HEAD" "$(git -C "$SPICES" rev-parse HEAD 2>/dev/null || echo unknown)" "$RAYLIB_REF" \

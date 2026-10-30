@@ -90,3 +90,19 @@ test('a recursion too deep is reported as a stack overflow', async ({ page }) =>
     await run(page, '(defn main [] : int (println "again") 0)');
     await expect(consoleEl(page)).toContainText('again', { timeout: 45_000 });
 });
+
+test('a program the engine refuses is reported, not run on an interpreter', async ({ page }) => {
+    await open(page);
+    // pthread_create is an import the browser engine refuses (it would start
+    // a second thread in MIR's interpreter); the refusal comes before main.
+    await run(page, `(defn start [] : int
+  \`\`\`c
+  pthread_t t;
+  return pthread_create(&t, NULL, NULL, NULL);
+  \`\`\`)
+(defn main [] : int (println "main ran") (start))`);
+    await expect(consoleEl(page).locator('.err').last())
+        .toContainText('this engine cannot run the program: the program starts threads', { timeout: 45_000 });
+    await expect(consoleEl(page)).not.toContainText('main ran');
+    await expect(consoleEl(page)).not.toContainText('interpreted');
+});

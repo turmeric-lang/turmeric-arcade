@@ -3,9 +3,10 @@
 // loop keeps producing frames because raylib's own sleep suspends under JSPI,
 // the page stays live meanwhile, and Stop tears the run down.
 //
-// Needs an engine with raylib in it (web/public/engine built by
-// tools/wasm-jit-spike/arcade/build.sh in turmeric); with a plain engine the
-// boot line names no spices and the suite skips.
+// Needs an engine with raylib in it: web/public/engine as
+// scripts/fetch-engine.sh builds it (turmeric's tur_wasm_arcade).  Locally, an
+// engine without raylib (a plain JIT module copied in by hand) skips these;
+// in CI it fails them, since the engine CI builds always carries raylib.
 import { test, expect } from '@playwright/test';
 import { existsSync } from 'node:fs';
 
@@ -38,8 +39,9 @@ async function bootedWithRaylib(page) {
     await page.waitForFunction(() => !!window.arcade.lastBoot, null, { timeout: 45_000 });
     const boot = await page.evaluate(() => window.arcade.lastBoot);
     expect(boot.ok, boot.error).toBe(true);
-    test.skip(!(boot.spices || []).includes('raylib'),
-              `the engine carries no raylib (spices: ${(boot.spices || []).join(', ') || 'none'})`);
+    const why = `the engine carries no raylib (spices: ${(boot.spices || []).join(', ') || 'none'})`;
+    if (process.env.CI) expect(boot.spices || [], why).toContain('raylib');
+    test.skip(!(boot.spices || []).includes('raylib'), why);
 }
 
 // The frame as raylib left it: a pixel of the clear colour and whether any

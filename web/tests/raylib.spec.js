@@ -35,9 +35,11 @@ const run = (page, src) => page.evaluate((s) => window.arcade.run(s), src);
 // Waits for the engine's boot line; skips the test when the engine has no
 // raylib (a plain JIT module).
 async function bootedWithRaylib(page) {
-    await expect(page.locator('#status')).toContainText('engine up', { timeout: 45_000 });
-    const status = await page.locator('#status').textContent();
-    test.skip(!/raylib/.test(status), `the engine carries no raylib: ${status}`);
+    await page.waitForFunction(() => !!window.arcade.lastBoot, null, { timeout: 45_000 });
+    const boot = await page.evaluate(() => window.arcade.lastBoot);
+    expect(boot.ok, boot.error).toBe(true);
+    test.skip(!(boot.spices || []).includes('raylib'),
+              `the engine carries no raylib (spices: ${(boot.spices || []).join(', ') || 'none'})`);
 }
 
 // The frame as raylib left it: a pixel of the clear colour and whether any
@@ -122,4 +124,63 @@ test('the blocking loop yields every frame under JSPI and Stop ends it', async (
     await page.click('#stop-btn');
     await expect(page.locator('#screen-host iframe')).toHaveCount(0);
     await expect(consoleEl(page)).toContainText('-- stopped');
+});
+
+test('callback mode: run-main-loop keeps drawing after main has unwound', async ({ page }) => {
+    await open(page);
+    await run(page, `(defmodule cb
+  (export)
+  (import raylib/core  :refer [init-window begin-drawing end-drawing clear-background])
+  (import raylib/color :refer [raywhite])
+  (import raylib/web   :refer [run-main-loop])
+  (def ^mut n 0)
+  (defn main [] : int
+    (init-window 480 270 "cb")
+    (run-main-loop (fn [] : unit
+                     (begin-drawing)
+                     (clear-background (raywhite))
+                     (end-drawing)
+                     (set! n (+ n 1))
+                     (when (= 0 (mod n 30)) (println n)))
+                   0)
+    (println "after run-main-loop")
+    0))`);
+    await bootedWithRaylib(page);
+    // emscripten_set_main_loop(..., 1) unwinds out of main: the shell reports
+    // that as the loop running, not as a trap or an exit ...
+    await expect(consoleEl(page).locator('.engine')).toContainText('main loop running', { timeout: 60_000 });
+    await expect(consoleEl(page)).not.toContainText('after run-main-loop');
+    // ... and the browser calls the interpreted closure every frame after.
+    await expect(consoleEl(page)).toContainText('\n90', { timeout: 30_000 });
+    expect(await consoleEl(page).locator('.err').count()).toBe(0);
+    await expect(page.locator('#status')).toHaveText('running');
+    await page.click('#stop-btn');
+    await expect(page.locator('#screen-host iframe')).toHaveCount(0);
+});
+
+test('cost: a raylib program that returns prints its engine line', async ({ page }) => {
+    await open(page);
+    const t0 = Date.now();
+    await run(page, `(defmodule cost
+  (export)
+  (import raylib/core  :refer [init-window begin-drawing end-drawing clear-background])
+  (import raylib/text  :refer [draw-text])
+  (import raylib/color :refer [raywhite black])
+  (defn main [] : int
+    (init-window 480 270 "cost")
+    (let [^mut n 0]
+      (while (< n 30)
+        (begin-drawing)
+        (clear-background (raywhite))
+        (draw-text "frame" 10 10 20 (black))
+        (end-drawing)
+        (set! n (+ n 1))))
+    0))`);
+    await bootedWithRaylib(page);
+    await expect(consoleEl(page)).toContainText('Device initialized successfully', { timeout: 60_000 });
+    const firstFrameMs = Date.now() - t0;
+    await expect(consoleEl(page).locator('.engine')).toContainText('compiled', { timeout: 30_000 });
+    const line = await consoleEl(page).locator('.engine').last().textContent();
+    console.log(`cost: Run to raylib's device line ${firstFrameMs} ms (engine boot included); ${line}`);
+    expect(line).toMatch(/^compiled -- front \d+ ms, c2mir \d+ ms, run \d+ ms$/);
 });

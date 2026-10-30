@@ -16,6 +16,7 @@ const consoleEl = document.getElementById('console');
 
 let frame = null;       // the current run's iframe, or null
 let pending = null;     // the program the next 'screen-ready' runs
+let lastBoot = null;    // the last run's 'boot' message (tests read it)
 
 function appendLine(text, cls) {
     const line = document.createElement('div');
@@ -52,6 +53,7 @@ function stop(quiet) {
 
 function run(src) {
     stop(true);
+    lastBoot = null;
     if (src !== undefined) editor.value = src;
     pending = { src: editor.value, args: '' };
     const f = document.createElement('iframe');
@@ -74,6 +76,7 @@ window.addEventListener('message', (e) => {
             pending = null;
             break;
         case 'boot':
+            lastBoot = m;
             if (m.ok) {
                 const spices = m.spices && m.spices.length ? `, spices: ${m.spices.join(', ')}` : '';
                 status.textContent = `engine up in ${ms(m.ms)}${spices}${m.jspi ? '' : ' (no JSPI: a frame loop cannot yield)'}`;
@@ -119,4 +122,5 @@ window.arcade = {
     stop,
     setSource: (src) => { editor.value = src; },
     clearConsole: () => { consoleEl.replaceChildren(); },
+    get lastBoot() { return lastBoot; },
 };

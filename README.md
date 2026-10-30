@@ -4,11 +4,13 @@ The raylib playground for the [Turmeric](https://github.com/turmeric-lang/turmer
 language, at **play.turmeric-lang.com**: write a program in the browser and run
 it on the compiler's own engine, with a screen for it to draw on.
 
-> Status: scaffold. The page runs a program in its screen pane on the JSPI
-> build of turmeric's browser JIT module and streams its output to the
-> console; a frame loop that sleeps between frames keeps the page live. The
-> engine does not carry raylib yet -- that is the P0 spike in the plan below,
-> and lands in turmeric's `tools/wasm-jit/`, not here.
+> Status: the P0 spike passes. With the arcade module (turmeric's
+> `tools/wasm-jit-spike/arcade/build.sh`: the JSPI JIT module with raylib's
+> web archive and the raylib and math spices embedded) the screen pane runs
+> the raylib quick start, a `run-main-loop` program and a blocking frame
+> loop under JSPI; `web/tests/raylib.spec.js` checks all three. CI still
+> builds the plain engine (no raylib), on which that spec skips; making the
+> arcade module the CI engine is P1.
 
 The plan is
 [docs/upcoming/raylib-web-playground-plan.md](https://github.com/turmeric-lang/turmeric/blob/main/docs/upcoming/raylib-web-playground-plan.md)

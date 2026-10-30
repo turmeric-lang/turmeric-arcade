@@ -38,6 +38,10 @@ body {
 #run-btn { border-color: var(--accent); }
 .examples select { font: inherit; margin-left: 4px; background: var(--panel); color: var(--fg); border: 1px solid var(--border); }
 .status { color: var(--dim); margin-left: auto; font-family: var(--mono); font-size: 12px; }
+.lsp-status { color: var(--dim); font-family: var(--mono); font-size: 12px; }
+.lsp-status[data-state="idle"]::before { content: "\25CF "; color: #7ee787; }
+.lsp-status[data-state="booting"]::before,
+.lsp-status[data-state="analyzing"]::before { content: "\25CF "; color: var(--accent); }
 .panes {
   flex: 1;
   display: grid;

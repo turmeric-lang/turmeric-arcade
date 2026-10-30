@@ -6,6 +6,7 @@
 
 import { EXAMPLES } from './examples.js';
 import { createEditor } from './editor.js';
+import { createLspClient } from './lsp-client.js';
 
 // The textarea until Monaco has loaded (editor.js), then Monaco.
 let editor = null;
@@ -117,11 +118,42 @@ for (const [key, ex] of Object.entries(EXAMPLES)) {
 }
 textarea.value = EXAMPLES[examples.value].src;
 
+// The language server: `tur lsp` in the stock module, in the worker that
+// comes with the engine (engine/lsp-worker.js), with every spice the engine
+// offers mounted, so `(import raylib/core ...)` resolves as it does when the
+// program runs.  A second wasm instance, so it starts on the editor's first
+// focus rather than at load: a visitor who only runs examples never pays for
+// it.  If it never boots, the editor is just an editor.
+const LSP_LABELS = { booting: 'starting analysis...', analyzing: 'analyzing...', idle: 'analysis ready' };
+let lsp = null;
+function setLspStatus(state) {
+    const el = document.getElementById('lsp-status');
+    if (!el) return;
+    el.hidden = state === 'unavailable';
+    el.dataset.state = state;
+    el.textContent = LSP_LABELS[state] || '';
+}
+function startLsp() {
+    if (lsp || editor.kind !== 'monaco') return lsp ? lsp.start() : Promise.resolve(false);
+    lsp = createLspClient({
+        monaco: editor.monaco,
+        languageId: 'turmeric',
+        workerUrl: '/engine/lsp-worker.js',
+        // One document: the program.
+        getTabs: () => [{ id: 'main', name: 'main.tur', _model: editor.editor.getModel() }],
+        onStatus: setLspStatus,
+    });
+    return lsp.start();
+}
+
 // window.arcade (what the tests drive) appears once the editor is up, Monaco
 // or the textarea it falls back to.
 async function startEditor() {
     editor = await createEditor(textarea);
     editor.onRun(() => run());
+    if (editor.kind === 'monaco') {
+        const once = editor.editor.onDidFocusEditorText(() => { once.dispose(); startLsp(); });
+    }
     examples.addEventListener('change', () => { editor.setValue(EXAMPLES[examples.value].src); });
     window.arcade = {
         run,
@@ -131,6 +163,16 @@ async function startEditor() {
         get editorKind() { return editor.kind; },
         clearConsole: () => { consoleEl.replaceChildren(); },
         get lastBoot() { return lastBoot; },
+        // The language server, for specs: start it (as a focus would), and read
+        // the markers it set, which live in Monaco, a module import.
+        lsp: {
+            start: () => startLsp(),
+            isBusy: () => !!(lsp && lsp.isBusy()),
+            markers: () => (editor.kind === 'monaco'
+                ? editor.monaco.editor.getModelMarkers({ owner: 'turmeric' })
+                    .map((m) => ({ message: m.message, severity: m.severity, line: m.startLineNumber }))
+                : []),
+        },
     };
 }
 startEditor();

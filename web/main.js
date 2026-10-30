@@ -5,8 +5,11 @@
 // between the two is at the top of screen.js.
 
 import { EXAMPLES } from './examples.js';
+import { createEditor } from './editor.js';
 
-const editor = document.getElementById('editor');
+// The textarea until Monaco has loaded (editor.js), then Monaco.
+let editor = null;
+const textarea = document.getElementById('editor');
 const runBtn = document.getElementById('run-btn');
 const stopBtn = document.getElementById('stop-btn');
 const examples = document.getElementById('examples');
@@ -55,8 +58,8 @@ function stop(quiet) {
 function run(src) {
     stop(true);
     lastBoot = null;
-    if (src !== undefined) editor.value = src;
-    pending = { src: editor.value, args: '' };
+    if (src !== undefined) editor.setValue(src);
+    pending = { src: editor.getValue(), args: '' };
     const f = document.createElement('iframe');
     f.setAttribute('sandbox', 'allow-scripts allow-same-origin');
     f.title = 'screen';
@@ -105,9 +108,6 @@ window.addEventListener('message', (e) => {
 
 runBtn.addEventListener('click', () => run());
 stopBtn.addEventListener('click', () => stop());
-editor.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
-});
 
 for (const [key, ex] of Object.entries(EXAMPLES)) {
     const opt = document.createElement('option');
@@ -115,13 +115,22 @@ for (const [key, ex] of Object.entries(EXAMPLES)) {
     opt.textContent = ex.title;
     examples.appendChild(opt);
 }
-examples.addEventListener('change', () => { editor.value = EXAMPLES[examples.value].src; });
-editor.value = EXAMPLES[examples.value].src;
+textarea.value = EXAMPLES[examples.value].src;
 
-window.arcade = {
-    run,
-    stop,
-    setSource: (src) => { editor.value = src; },
-    clearConsole: () => { consoleEl.replaceChildren(); },
-    get lastBoot() { return lastBoot; },
-};
+// window.arcade (what the tests drive) appears once the editor is up, Monaco
+// or the textarea it falls back to.
+async function startEditor() {
+    editor = await createEditor(textarea);
+    editor.onRun(() => run());
+    examples.addEventListener('change', () => { editor.setValue(EXAMPLES[examples.value].src); });
+    window.arcade = {
+        run,
+        stop,
+        setSource: (src) => { editor.setValue(src); },
+        getSource: () => editor.getValue(),
+        get editorKind() { return editor.kind; },
+        clearConsole: () => { consoleEl.replaceChildren(); },
+        get lastBoot() { return lastBoot; },
+    };
+}
+startEditor();

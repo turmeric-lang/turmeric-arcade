@@ -131,3 +131,26 @@ test('a defscript header naming a spice the engine does not offer is refused by 
         .toContainText("spice 'nope' is not in this build", { timeout: 45_000 });
     await expect(consoleEl(page)).not.toContainText('main ran');
 });
+
+test('the editor is Monaco with the Turmeric language, and Ctrl+Enter runs', async ({ page }) => {
+    // Monaco loads a worker, styles and its icon font: the one CSP (csp.js)
+    // has to allow each, so a violation fails the test.
+    const csp = [];
+    page.on('console', (m) => { if (/Content.Security.Policy/i.test(m.text())) csp.push(m.text()); });
+    await open(page);
+    expect(await page.evaluate(() => window.arcade.editorKind)).toBe('monaco');
+    await expect(page.locator('.monaco-editor')).toBeVisible();
+    // The tokenizer colours `defn` as a keyword: once Monaco has tokenized the
+    // line (it does so after the edit, not during it), `defn` is a span of its
+    // own with a token class other than the program name's.
+    await page.evaluate(() => window.arcade.setSource('(defn main [] : int (println "from the keyboard") 0)'));
+    await expect.poll(() => page.evaluate(() => {
+        const spans = [...document.querySelectorAll('.view-line span span')];
+        const cls = (t) => (spans.find((s) => s.textContent.trim() === t) || {}).className;
+        return cls('defn') && cls('main') && cls('defn') !== cls('main');
+    }), { timeout: 10_000 }).toBe(true);
+    await page.locator('.monaco-editor textarea').focus();
+    await page.keyboard.press('Control+Enter');
+    await expect(consoleEl(page)).toContainText('from the keyboard', { timeout: 45_000 });
+    expect(csp).toEqual([]);
+});

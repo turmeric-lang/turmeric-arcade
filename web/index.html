@@ -15,6 +15,13 @@
     <label class="examples">Examples
       <select id="examples"></select>
     </label>
+    <details class="spices" id="spices">
+      <summary>Spices</summary>
+      <div class="spices-panel">
+        <p class="spices-help">Ticking a spice declares it in the program's <code>defscript</code> header, so the program runs the same with <code>tur --enable=script-deps</code>. Imports work without it.</p>
+        <div id="spice-list"></div>
+      </div>
+    </details>
     <span id="status" class="status" aria-live="polite"></span>
     <span id="lsp-status" class="lsp-status" hidden></span>
   </header>

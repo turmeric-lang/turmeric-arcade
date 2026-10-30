@@ -1,6 +1,6 @@
 // editor.js -- the program editor: Monaco with the Turmeric language
 // (editor-language.js), over the textarea index.html starts with.  The page
-// talks to it through four calls -- getValue, setValue, focus, onRun -- so
+// talks to it through five calls -- getValue, setValue, focus, onRun, onChange -- so
 // that if Monaco fails to load, the textarea is still the editor and nothing
 // else changes.  The import is the whole of monaco-editor, as Try's is, but
 // the only worker handed out is Monaco's own editor worker: the language
@@ -36,6 +36,7 @@ function textareaEditor(textarea) {
         onRun: (fn) => textarea.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); fn(); }
         }),
+        onChange: (fn) => textarea.addEventListener('input', () => fn()),
     };
 }
 
@@ -79,5 +80,6 @@ export async function createEditor(textarea) {
         setValue: (s) => editor.setValue(s),
         focus: () => editor.focus(),
         onRun: (fn) => editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, fn),
+        onChange: (fn) => editor.onDidChangeModelContent(() => fn()),
     };
 }

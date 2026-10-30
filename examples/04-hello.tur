@@ -1,0 +1,7 @@
+;;; hello -- Hello (no screen)
+;;;
+;;; A program needs no screen: what it prints goes to the console.
+(defn main [] : int
+  (println "hello, arcade")
+  (println (+ 40 2))
+  0)

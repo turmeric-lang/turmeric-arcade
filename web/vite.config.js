@@ -75,6 +75,8 @@ export default defineConfig({
     // Not 3000: that is Try Turmeric's dev server on a developer's machine.
     port: 3100,
     headers: SERVER_HEADERS,
+    // examples.js reads ../examples/ (the repository's examples tree).
+    fs: { allow: [resolve(HERE, '..')] },
   },
   preview: {
     headers: SERVER_HEADERS,

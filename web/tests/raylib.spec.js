@@ -3,17 +3,23 @@
 // loop keeps producing frames because raylib's own sleep suspends under JSPI,
 // the page stays live meanwhile, and Stop tears the run down.
 //
+// The spices each program imports are mounted from the engine's packages
+// when it runs (screen.js); the boot line names them.
+//
 // Needs an engine with raylib in it: web/public/engine as
 // scripts/fetch-engine.sh builds it (turmeric's tur_wasm_arcade).  Locally, an
 // engine without raylib (a plain JIT module copied in by hand) skips these;
 // in CI it fails them, since the engine CI builds always carries raylib.
 import { test, expect } from '@playwright/test';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const HAVE_ENGINE = existsSync(new URL('../public/engine/turmeric-jit.wasm', import.meta.url));
 test.skip(!HAVE_ENGINE && !process.env.CI, 'web/public/engine is not built; run scripts/fetch-engine.sh');
 
 const consoleEl = (page) => page.locator('#console');
+// The programs are the Examples menu's own files (examples/), so what the
+// menu offers is what this suite runs.
+const example = (name) => readFileSync(new URL(`../../examples/${name}.tur`, import.meta.url), 'utf8');
 
 async function open(page) {
     // Keep the WebGL drawing buffer between frames in every frame of the page
@@ -39,9 +45,12 @@ async function bootedWithRaylib(page) {
     await page.waitForFunction(() => !!window.arcade.lastBoot, null, { timeout: 45_000 });
     const boot = await page.evaluate(() => window.arcade.lastBoot);
     expect(boot.ok, boot.error).toBe(true);
-    const why = `the engine carries no raylib (spices: ${(boot.spices || []).join(', ') || 'none'})`;
-    if (process.env.CI) expect(boot.spices || [], why).toContain('raylib');
-    test.skip(!(boot.spices || []).includes('raylib'), why);
+    const offered = boot.offered || [];
+    const why = `the engine carries no raylib (offered: ${offered.join(', ') || 'none'})`;
+    if (process.env.CI) expect(offered, why).toContain('raylib');
+    test.skip(!offered.includes('raylib'), why);
+    // The program imports raylib, so raylib and its dep math are mounted.
+    expect(boot.spices).toEqual(['math', 'raylib']);
 }
 
 // The frame as raylib left it: a pixel of the clear colour and whether any
@@ -63,20 +72,7 @@ async function readFrame(page, box) {
     }, box);
 }
 
-const HELLO = `(defmodule hello
-  (export)
-  (import raylib/core  :refer [init-window window-should-close begin-drawing
-                               end-drawing clear-background])
-  (import raylib/text  :refer [draw-text])
-  (import raylib/color :refer [raywhite black])
-  (defn main [] : int
-    (init-window 480 270 "hello")
-    (while (not (window-should-close))
-      (begin-drawing)
-      (clear-background (raywhite))
-      (draw-text "Hello, Turmeric!" 120 120 20 (black))
-      (end-drawing))
-    0))`;
+const HELLO = example('01-hello-raylib');
 
 test('the quick-start program draws its text (struct by value: Color)', async ({ page }) => {
     await open(page);
@@ -99,21 +95,7 @@ test('the quick-start program draws its text (struct by value: Color)', async ({
 
 test('the blocking loop yields every frame under JSPI and Stop ends it', async ({ page }) => {
     await open(page);
-    await run(page, `(defmodule frames
-  (export)
-  (import raylib/core  :refer [init-window window-should-close begin-drawing
-                               end-drawing clear-background])
-  (import raylib/color :refer [raywhite])
-  (defn main [] : int
-    (init-window 480 270 "frames")
-    (let [^mut n 0]
-      (while (not (window-should-close))
-        (begin-drawing)
-        (clear-background (raywhite))
-        (end-drawing)
-        (set! n (+ n 1))
-        (when (= 0 (mod n 30)) (println n))))
-    0))`);
+    await run(page, example('02-frame-counter'));
     await bootedWithRaylib(page);
     // Lines arrive while the loop runs: each is 30 frames later than the last,
     // so the loop is yielding (raylib's sleep suspends) rather than blocking.
@@ -130,23 +112,7 @@ test('the blocking loop yields every frame under JSPI and Stop ends it', async (
 
 test('callback mode: run-main-loop keeps drawing after main has unwound', async ({ page }) => {
     await open(page);
-    await run(page, `(defmodule cb
-  (export)
-  (import raylib/core  :refer [init-window begin-drawing end-drawing clear-background])
-  (import raylib/color :refer [raywhite])
-  (import raylib/web   :refer [run-main-loop])
-  (def ^mut n 0)
-  (defn main [] : int
-    (init-window 480 270 "cb")
-    (run-main-loop (fn [] : unit
-                     (begin-drawing)
-                     (clear-background (raywhite))
-                     (end-drawing)
-                     (set! n (+ n 1))
-                     (when (= 0 (mod n 30)) (println n)))
-                   0)
-    (println "after run-main-loop")
-    0))`);
+    await run(page, example('03-main-loop-callback'));
     await bootedWithRaylib(page);
     // emscripten_set_main_loop(..., 1) unwinds out of main: the shell reports
     // that as the loop running, not as a trap or an exit ...

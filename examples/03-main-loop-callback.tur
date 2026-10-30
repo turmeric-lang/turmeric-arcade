@@ -1,0 +1,25 @@
+;;; main-loop-callback -- The same loop as a frame callback
+;;;
+;;; run-main-loop hands a closure to the browser, which calls it once a
+;;; frame. main does not return: it unwinds, so the line after
+;;; run-main-loop is never printed, and the console says "main loop
+;;; running". This is the form for a browser without JSPI.
+(defmodule cb
+  (export)
+  (import raylib/core  :refer [init-window begin-drawing end-drawing clear-background])
+  (import raylib/color :refer [raywhite])
+  (import raylib/web   :refer [run-main-loop])
+
+  (def ^mut n 0)
+
+  (defn main [] : int
+    (init-window 480 270 "cb")
+    (run-main-loop (fn [] : unit
+                     (begin-drawing)
+                     (clear-background (raywhite))
+                     (end-drawing)
+                     (set! n (+ n 1))
+                     (when (= 0 (mod n 30)) (println n)))
+                   0)
+    (println "after run-main-loop")
+    0))

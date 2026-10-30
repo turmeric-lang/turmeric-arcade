@@ -2,11 +2,12 @@
 #
 # TURMERIC_REF is the turmeric-lang/turmeric commit whose tur_wasm_arcade
 # target builds the engine: the JSPI browser JIT module with raylib linked in
-# (tools/wasm-jit/arcade/).  A commit on main: no release tag carries the
-# target yet (v0.73.0 predates it), so this moves to the first one that does.
-TURMERIC_REF=5da7c12a009db3ef200e741ec9d84413b0fb19e1
-# The turmeric-spices commit whose raylib and math spices the engine embeds
-# at /spices/<name>/src.
+# (tools/wasm-jit/arcade/), and the spice packages beside it.  A commit on
+# main: no release tag carries the target yet (v0.73.0 predates it), so this
+# moves to the first one that does.
+TURMERIC_REF=e2e9adcd53e1d70006c21ed0f763310a6fd4c17b
+# The turmeric-spices commit whose raylib and math spices are packaged
+# beside the engine.
 SPICES_REF=c5864091a3487d8219761e8f489e97ce6a584a86
 # raylib, at the ref the raylib spice's :cmake-deps pins.
 RAYLIB_REF=5.5

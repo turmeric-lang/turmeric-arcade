@@ -1,0 +1,19 @@
+;;; sleeping-loop -- A loop that sleeps between steps
+;;;
+;;; emscripten_sleep suspends the program and lets the page run, so the
+;;; lines appear one by one while the loop is still going.
+(defn nap [ms : int] : void
+  ```c
+  extern void emscripten_sleep(unsigned int);
+  emscripten_sleep((unsigned int)ms);
+  ```)
+
+(defn main [] : int
+  (let [^mut frame 0
+        ^mut x     7.1]
+    (while (< frame 6)
+      (nap 250)
+      (set! x (+ x 0.25))
+      (println x)
+      (set! frame (+ frame 1)))
+    0))

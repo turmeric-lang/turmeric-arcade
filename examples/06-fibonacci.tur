@@ -1,0 +1,9 @@
+;;; fibonacci -- Fibonacci
+;;;
+;;; Plain recursion on the engine.
+(defn fib [n : int] : int
+  (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))
+
+(defn main [] : int
+  (println (fib 27))
+  0)

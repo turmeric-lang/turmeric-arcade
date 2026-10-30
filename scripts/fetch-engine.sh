@@ -34,6 +34,13 @@ OUT=${ARCADE_ENGINE_BUILD:-$BUILD/arcade-jspi}
 # then the stdlib package, which the module's link embeds a loader for.
 [ -f "$BUILD/wasm-jit/sources.txt" ] || cmake -S "$TUR" -B "$BUILD" -DTUR_WASM=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 cmake --build "$BUILD" --target tur_stdlib_pkg
+# The one generated source in the module's list, src/generated/region_rt_embed.c
+# (the region runtime embedded for the emitter): a custom command of turmeric's
+# tur_core with no target of its own, so it is made here the way that command
+# makes it, rather than by building the native compiler for it.
+mkdir -p "$BUILD/src/generated"
+cmake -DSRC_DIR="$TUR/src/runtime" -DOUT="$BUILD/src/generated/region_rt_embed.c" \
+      -P "$TUR/cmake/embed_region_runtime.cmake"
 TUR_WASM_BUILD_DIR=$BUILD bash "$TUR/tools/wasm-jit-spike/jspi/build.sh" "$OUT"
 
 DEST=$ROOT/web/public/engine

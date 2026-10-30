@@ -1,0 +1,21 @@
+;;; hello-raylib -- Hello, raylib
+;;;
+;;; The raylib README's quick start, as a program. The blocking frame loop
+;;; runs unchanged on the page: raylib's own sleep at the end of each frame
+;;; suspends the program (JSPI) and lets the page run. The spices it imports
+;;; are fetched from the engine's packages when you press Run.
+(defmodule hello
+  (export)
+  (import raylib/core  :refer [init-window window-should-close begin-drawing
+                               end-drawing clear-background])
+  (import raylib/text  :refer [draw-text])
+  (import raylib/color :refer [raywhite black])
+
+  (defn main [] : int
+    (init-window 480 270 "hello")
+    (while (not (window-should-close))
+      (begin-drawing)
+      (clear-background (raywhite))
+      (draw-text "Hello, Turmeric!" 120 120 20 (black))
+      (end-drawing))
+    0))

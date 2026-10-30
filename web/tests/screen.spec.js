@@ -106,3 +106,28 @@ test('a program the engine refuses is reported, not run on an interpreter', asyn
     await expect(consoleEl(page)).not.toContainText('main ran');
     await expect(consoleEl(page)).not.toContainText('interpreted');
 });
+
+test('the Examples menu is the examples/ tree, in file order', async ({ page }) => {
+    await open(page);
+    const options = await page.locator('#examples option').allTextContents();
+    expect(options).toEqual(['Hello, raylib', 'A frame loop that prints as it runs',
+                             'The same loop as a frame callback', 'Hello (no screen)',
+                             'A loop that sleeps between steps', 'Fibonacci']);
+    await page.selectOption('#examples', 'hello');
+    await page.click('#run-btn');
+    await expect(consoleEl(page)).toContainText('hello, arcade', { timeout: 45_000 });
+    // A program that imports no spice mounts none.
+    const boot = await page.evaluate(() => window.arcade.lastBoot);
+    expect(boot.spices).toEqual([]);
+});
+
+test('a defscript header naming a spice the engine does not offer is refused by name', async ({ page }) => {
+    await open(page);
+    await run(page, `(defscript :spices #map{"nope" #map{:url "https://github.com/turmeric-lang/turmeric-spices"
+                                       :ref "nope-v0.1.0"
+                                       :subdir "spices/nope"}})
+(defn main [] : int (println "main ran") 0)`);
+    await expect(consoleEl(page).locator('.err').last())
+        .toContainText("spice 'nope' is not in this build", { timeout: 45_000 });
+    await expect(consoleEl(page)).not.toContainText('main ran');
+});

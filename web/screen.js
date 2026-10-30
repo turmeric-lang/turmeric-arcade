@@ -10,8 +10,10 @@
 //
 //   iframe -> page   {type: 'screen-ready'}            the shell is listening
 //   page -> iframe   {type: 'run', src, args}          compile and run src
-//   iframe -> page   {type: 'boot', ok, jspi, ms}      the engine is up (or
-//                                                      not: error says why)
+//   iframe -> page   {type: 'boot', ok, jspi, ms,      the engine is up and
+//                     spices, offered, mountMs}        the program's spices
+//                                                      mounted (or not: error
+//                                                      says why)
 //   iframe -> page   {type: 'print' | 'printErr', text} one line of stdout or
 //                                                      stderr, as the program
 //                                                      writes it
@@ -83,7 +85,7 @@ function loadScript(src) {
 }
 
 let mod = null;
-async function boot() {
+async function boot(src) {
     const t0 = performance.now();
     if (typeof SharedArrayBuffer === 'undefined') {
         throw new Error('this page is not cross-origin isolated (no SharedArrayBuffer)');
@@ -107,20 +109,21 @@ async function boot() {
     // engine cannot take is answered {engine: 'refused', reason} instead
     // (raylib-web-playground-plan J3 e).
     m._turi_wasm_jit_set_fallback(0);
-    // The spices the engine carries, embedded at /spices/<name>/src: each goes
-    // on the module search path, so `(import raylib/core)` resolves
-    // (raylib-web-playground-plan 5.3, prerequisite 9).
-    const spices = [];
-    try {
-        for (const name of m.FS.readdir('/spices')) {
-            if (name === '.' || name === '..') continue;
-            const dir = `/spices/${name}/src`;
-            if (m.FS.analyzePath(dir).exists &&
-                m.ccall('turi_wasm_add_include_dir', 'number', ['string'], [dir]) > 0) spices.push(name);
-        }
-    } catch (_) { /* no /spices: a module without any */ }
+    const ms = performance.now() - t0;
+    // The spices the program names -- its imports' roots and its defscript
+    // header's keys -- fetched from the engine's packages (engine/spices/,
+    // with their deps) and mounted at /spices/<name>/src on the module search
+    // path, so `(import raylib/core)` resolves (raylib-web-playground-plan
+    // J2).  spices.js comes with the engine, so it is loaded from there, not
+    // bundled.  A header name the engine does not offer is the engine's to
+    // refuse, by name.
+    const { loadIndex, spicesFor, mountSpices } =
+        await import(/* @vite-ignore */ `${ENGINE_DIR}/spices.js`);
+    const index = await loadIndex(`${ENGINE_DIR}/spices`);
+    const { mounted } = await mountSpices(m, `${ENGINE_DIR}/spices`, spicesFor(src, index).names, index);
     mod = m;
-    return { jspi: 'Suspending' in WebAssembly, ms: performance.now() - t0, spices };
+    return { jspi: 'Suspending' in WebAssembly, ms, spices: mounted, offered: [...index.keys()],
+             mountMs: performance.now() - t0 - ms };
 }
 
 function cString(str) {
@@ -189,7 +192,7 @@ window.addEventListener('message', async (e) => {
     started = true;
     body.dataset.state = 'booting';
     try {
-        const b = await boot();
+        const b = await boot(String(m.src || ''));
         post({ type: 'boot', ok: true, ...b });
     } catch (err) {
         body.dataset.state = 'failed';

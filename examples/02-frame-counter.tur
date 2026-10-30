@@ -1,0 +1,21 @@
+;;; frame-counter -- A frame loop that prints as it runs
+;;;
+;;; State in a ^mut binding, carried across frames. Every 30th frame it
+;;; prints the count: the lines reach the console while the loop is still
+;;; going, because each frame yields to the page.
+(defmodule frames
+  (export)
+  (import raylib/core  :refer [init-window window-should-close begin-drawing
+                               end-drawing clear-background])
+  (import raylib/color :refer [raywhite])
+
+  (defn main [] : int
+    (init-window 480 270 "frames")
+    (let [^mut n 0]
+      (while (not (window-should-close))
+        (begin-drawing)
+        (clear-background (raywhite))
+        (end-drawing)
+        (set! n (+ n 1))
+        (when (= 0 (mod n 30)) (println n))))
+    0))

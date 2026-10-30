@@ -9,8 +9,10 @@ it on the compiler's own engine, with a screen for it to draw on.
 > math spices embedded), built in CI from the commit `scripts/engine.lock`
 > pins. The screen pane runs the raylib quick start, a `run-main-loop`
 > program and a blocking frame loop under JSPI, and reports a program the
-> engine refuses instead of handing it to an interpreter without raylib;
-> `web/tests/` checks each.
+> engine refuses instead of handing it to an interpreter without raylib.
+> The spices a program imports (or names in a `defscript` header) are
+> fetched from the engine's packages when it runs, and the Examples menu is
+> the `examples/` tree, which `web/tests/` runs.
 
 The plan is
 [docs/upcoming/raylib-web-playground-plan.md](https://github.com/turmeric-lang/turmeric/blob/main/docs/upcoming/raylib-web-playground-plan.md)
@@ -79,13 +81,15 @@ build).
 
 ```
 scripts/engine.lock        the turmeric, turmeric-spices and raylib refs and emsdk version the engine is built from
-scripts/fetch-engine.sh    builds the engine into web/public/engine/
+scripts/fetch-engine.sh    builds the engine into web/public/engine/ (with spices/ and spices.js)
+examples/                  the Examples menu: one program per file, titled by its ;;; header
 web/index.html, main.js    the page: editor, Run/Stop, Examples, console
 web/screen.html, screen.js the screen pane's shell, one run per iframe
-web/examples.js            the Examples menu (plain programs until raylib lands)
+web/examples.js            reads examples/ into the menu at build time
 web/csp.js                 the one Content-Security-Policy
 web/worker.js              the Cloudflare Worker in front of the static site
-web/tests/                 Playwright: run, streaming, Stop, stack overflow
+web/tests/                 Playwright: run, streaming, Stop, stack overflow, refusals,
+                           and the raylib examples themselves
 ```
 
 ## License

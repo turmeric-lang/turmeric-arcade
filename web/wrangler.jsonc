@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "turmeric-arcade",
+  "main": "./worker.js",
+  "compatibility_date": "2026-05-14",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "routes": [
+    { "pattern": "play.turmeric-lang.com", "custom_domain": true }
+  ]
+}

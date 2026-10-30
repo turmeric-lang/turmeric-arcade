@@ -1,0 +1,87 @@
+name: CI
+
+# Build the engine from the turmeric commit scripts/engine.lock pins, run the
+# page's Playwright suite against it, and make the production build.  No
+# deploy here: `npm run deploy` from web/ (wrangler, authenticated) does that
+# until a deploy workflow exists.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Engine, tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      # Actions are pinned to the same commits turmeric's own CI pins.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Read scripts/engine.lock
+        id: lock
+        run: |
+          . scripts/engine.lock
+          echo "turmeric_ref=$TURMERIC_REF" >> "$GITHUB_OUTPUT"
+          echo "emsdk_version=$EMSDK_VERSION" >> "$GITHUB_OUTPUT"
+
+      # The pinned commit only: a fetch by sha, not a clone of a branch.
+      - name: Check out turmeric at the pinned commit
+        run: |
+          git init -q ../turmeric
+          git -C ../turmeric remote add origin https://github.com/turmeric-lang/turmeric
+          git -C ../turmeric fetch --depth 1 origin "${{ steps.lock.outputs.turmeric_ref }}"
+          git -C ../turmeric checkout -q FETCH_HEAD
+
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984 # v16
+        with:
+          version: ${{ steps.lock.outputs.emsdk_version }}
+          actions-cache-folder: emsdk-cache
+
+      - name: Cache the engine's objects
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ../turmeric/build-wasm
+          key: engine-${{ runner.os }}-${{ steps.lock.outputs.turmeric_ref }}-${{ steps.lock.outputs.emsdk_version }}-${{ hashFiles('scripts/fetch-engine.sh') }}
+
+      - name: Build the engine
+        run: bash scripts/fetch-engine.sh ../turmeric
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright
+        working-directory: web
+        run: npm test
+
+      - name: Build the site
+        working-directory: web
+        run: npm run build
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: playwright-report
+          path: web/playwright-report
+          if-no-files-found: ignore

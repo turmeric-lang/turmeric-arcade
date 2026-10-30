@@ -1,0 +1,9 @@
+# The engine this site is built against (scripts/fetch-engine.sh, CI).
+#
+# TURMERIC_REF is the turmeric-lang/turmeric commit whose tools/wasm-jit builds
+# the JSPI module.  It is a commit, not a release tag, while the JSPI build
+# switch (TUR_WASM_JIT_JSPI, tools/wasm-jit-spike/jspi/build.sh) is still on
+# its feature branch; it moves to a release tag once that merges.
+TURMERIC_REF=4221b5abbff9bdf6fcac7eed447c378162dbf73f
+# The Emscripten SDK the module is built with: the same pin turmeric's CI uses.
+EMSDK_VERSION=6.0.10

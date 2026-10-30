@@ -1,0 +1,21 @@
+{
+  "name": "turmeric-arcade",
+  "version": "0.1.0",
+  "description": "Turmeric Arcade - the raylib playground for the Turmeric language",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "npm run build && wrangler dev --config dist/turmeric_arcade/wrangler.json",
+    "deploy": "npm run build && wrangler deploy --config dist/turmeric_arcade/wrangler.json",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.64.0",
+    "@playwright/test": "^1.64.1",
+    "vite": "^8.3.5",
+    "wrangler": "^4.152.0"
+  },
+  "license": "MIT"
+}

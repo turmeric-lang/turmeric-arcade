@@ -1,0 +1,93 @@
+:root {
+  --bg: #15141a;
+  --panel: #1e1d25;
+  --border: #33313d;
+  --fg: #e8e6ef;
+  --dim: #9a97a8;
+  --accent: #e6a23c;
+  --err: #ff7b72;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.4 system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.toolbar h1 { font-size: 15px; margin: 0 8px 0 0; color: var(--accent); }
+.toolbar button {
+  font: inherit;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--fg);
+  cursor: pointer;
+}
+.toolbar button:disabled { opacity: .45; cursor: default; }
+#run-btn { border-color: var(--accent); }
+.examples select { font: inherit; margin-left: 4px; background: var(--panel); color: var(--fg); border: 1px solid var(--border); }
+.status { color: var(--dim); margin-left: auto; font-family: var(--mono); font-size: 12px; }
+.panes {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 0;
+}
+.editor-pane { display: flex; border-right: 1px solid var(--border); }
+#editor {
+  flex: 1;
+  margin: 0;
+  padding: 12px;
+  border: 0;
+  resize: none;
+  background: var(--bg);
+  color: var(--fg);
+  font: 13px/1.5 var(--mono);
+  outline: none;
+  tab-size: 2;
+}
+.right { display: flex; flex-direction: column; min-height: 0; }
+.screen-host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 9;
+  max-height: 55%;
+  background: #000;
+  border-bottom: 1px solid var(--border);
+}
+.screen-host iframe { width: 100%; height: 100%; border: 0; }
+.console {
+  flex: 1;
+  margin: 0;
+  padding: 8px 12px;
+  overflow: auto;
+  font: 13px/1.5 var(--mono);
+  white-space: pre-wrap;
+}
+.console .err { color: var(--err); }
+.console .engine { color: var(--dim); }
+@media (max-width: 800px) {
+  .panes { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  .editor-pane { border-right: 0; border-bottom: 1px solid var(--border); }
+}
+
+/* screen.html, inside the iframe */
+body.screen { background: #000; align-items: center; justify-content: center; }
+body.screen #canvas {
+  max-width: 100%;
+  max-height: 100%;
+  outline: none;
+  image-rendering: pixelated;
+}

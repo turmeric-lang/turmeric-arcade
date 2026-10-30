@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Turmeric Arcade</title>
+  <meta name="description" content="Write a Turmeric program and run it in the browser, on the compiler's own engine.">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="toolbar">
+    <h1>Turmeric Arcade</h1>
+    <button id="run-btn" type="button" title="Run (Ctrl+Enter)">Run</button>
+    <button id="stop-btn" type="button" disabled>Stop</button>
+    <label class="examples">Examples
+      <select id="examples"></select>
+    </label>
+    <span id="status" class="status" aria-live="polite"></span>
+  </header>
+  <main class="panes">
+    <section class="editor-pane">
+      <textarea id="editor" spellcheck="false" aria-label="program"></textarea>
+    </section>
+    <section class="right">
+      <div id="screen-host" class="screen-host" aria-label="screen"></div>
+      <pre id="console" class="console" aria-label="console"></pre>
+    </section>
+  </main>
+  <script type="module" src="/main.js"></script>
+</body>
+</html>

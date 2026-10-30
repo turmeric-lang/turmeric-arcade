@@ -1,0 +1,83 @@
+// editor.js -- the program editor: Monaco with the Turmeric language
+// (editor-language.js), over the textarea index.html starts with.  The page
+// talks to it through four calls -- getValue, setValue, focus, onRun -- so
+// that if Monaco fails to load, the textarea is still the editor and nothing
+// else changes.  The import is the whole of monaco-editor, as Try's is, but
+// the only worker handed out is Monaco's own editor worker: the language
+// intelligence is the language server's (P2), and the JSON/CSS/TS workers
+// start only for those languages, which the arcade never opens.
+
+import { configureTurmeric } from './editor-language.js';
+
+// One dark theme over Monaco's, in the page's colours (style.css :root).
+const THEME = 'arcade-dark';
+function defineTheme(monaco) {
+    const css = getComputedStyle(document.documentElement);
+    const v = (name, fallback) => (css.getPropertyValue(name).trim() || fallback);
+    monaco.editor.defineTheme(THEME, {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [],
+        colors: {
+            'editor.background': v('--bg', '#15141a'),
+            'editor.foreground': v('--fg', '#e8e6ef'),
+            'editorLineNumber.foreground': v('--dim', '#9a97a8'),
+            'editorCursor.foreground': v('--accent', '#e6a23c'),
+        },
+    });
+}
+
+function textareaEditor(textarea) {
+    return {
+        kind: 'textarea',
+        getValue: () => textarea.value,
+        setValue: (s) => { textarea.value = s; },
+        focus: () => textarea.focus(),
+        onRun: (fn) => textarea.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); fn(); }
+        }),
+    };
+}
+
+export async function createEditor(textarea) {
+    const fallback = textareaEditor(textarea);
+    let monaco;
+    try {
+        self.MonacoEnvironment = {
+            getWorker: () => new Worker(new URL('monaco-editor/editor/editor.worker.js', import.meta.url),
+                                        { type: 'module' }),
+        };
+        monaco = await import('monaco-editor');
+    } catch (err) {
+        console.warn('Monaco did not load; the editor stays a textarea:', err);
+        return fallback;
+    }
+    configureTurmeric(monaco);
+    defineTheme(monaco);
+    const host = document.createElement('div');
+    host.id = 'monaco';
+    host.className = 'monaco-host';
+    textarea.replaceWith(host);
+    const editor = monaco.editor.create(host, {
+        value: textarea.value,
+        language: 'turmeric',
+        theme: THEME,
+        automaticLayout: true,
+        tabSize: 2,
+        insertSpaces: true,
+        detectIndentation: false,
+        minimap: { enabled: false },
+        fontSize: 13,
+        scrollBeyondLastLine: false,
+        bracketPairColorization: { enabled: true },
+    });
+    return {
+        kind: 'monaco',
+        monaco,
+        editor,
+        getValue: () => editor.getValue(),
+        setValue: (s) => editor.setValue(s),
+        focus: () => editor.focus(),
+        onRun: (fn) => editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, fn),
+    };
+}

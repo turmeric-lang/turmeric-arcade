@@ -84,6 +84,8 @@ scripts/engine.lock        the turmeric, turmeric-spices and raylib refs and ems
 scripts/fetch-engine.sh    builds the engine into web/public/engine/ (with spices/ and spices.js)
 examples/                  the Examples menu: one program per file, titled by its ;;; header
 web/index.html, main.js    the page: editor, Run/Stop, Examples, console
+web/editor.js              Monaco (the textarea stays the editor if it fails to load)
+web/editor-language.js     the Turmeric tokenizer, from Try Turmeric's web/editor-language.js
 web/screen.html, screen.js the screen pane's shell, one run per iframe
 web/examples.js            reads examples/ into the menu at build time
 web/csp.js                 the one Content-Security-Policy

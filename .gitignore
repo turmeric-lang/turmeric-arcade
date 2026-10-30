@@ -8,3 +8,6 @@ playwright-report/
 # The engine (turmeric-jit.{js,wasm}, stdlib.data): a build product of
 # scripts/fetch-engine.sh, never committed.
 web/public/engine/
+
+# turmeric-spices and raylib checkouts scripts/fetch-engine.sh makes.
+.engine-deps/

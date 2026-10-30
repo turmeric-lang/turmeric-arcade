@@ -29,6 +29,7 @@ function appendLine(text, cls) {
 const ms = (n) => `${Math.round(n)} ms`;
 function engineLine(a) {
     if (a.engine === 'error') return `Error: ${a.reason || 'the program failed'}`;
+    if (a.engine === 'refused') return `Error: this engine cannot run the program: ${a.reason || 'refused'}`;
     if (a.engine === 'interpreted') return `interpreted -- ${a.reason || ''}`.trim();
     if (a.mainLoop) return 'compiled -- main loop running';
     const exit = a.exit ? ` (exit ${a.exit})` : '';
@@ -93,7 +94,7 @@ window.addEventListener('message', (e) => {
             appendLine(m.text, 'err');
             break;
         case 'result':
-            appendLine(engineLine(m.answer), m.answer.engine === 'error' ? 'err' : 'engine');
+            appendLine(engineLine(m.answer), m.answer.engine === 'error' || m.answer.engine === 'refused' ? 'err' : 'engine');
             status.textContent = m.answer.mainLoop ? 'running' : 'done';
             if (!m.answer.mainLoop) stopBtn.disabled = true;
             break;

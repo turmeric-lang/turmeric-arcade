@@ -18,8 +18,10 @@
 //   iframe -> page   {type: 'result', answer}          main returned: the
 //                                                      engine line
 //
-// The answer is the module's own JSON -- {engine: 'compiled' | 'interpreted'
-// | 'error', exit, reason, front_ms, compile_ms, run_ms} -- or one the shell
+// The answer is the module's own JSON -- {engine: 'compiled' | 'refused'
+// | 'error', exit, reason, front_ms, compile_ms, run_ms}; 'refused' is a
+// program the engine cannot take (it starts threads, say), which nothing then
+// runs, since the shell turns the module's interpreter fallback off -- or one the shell
 // makes: {engine: 'error', exit: 1, trapped: true, reason} when the module
 // threw (a wasm trap, or a stack overflow, which both stacks report through
 // here), and {engine: 'compiled', exit: 0, mainLoop: true} when the program
@@ -101,6 +103,10 @@ async function boot() {
         stderr: (byte) => streamByte(stderrStream, byte),
     });
     if (m._turi_wasm_init() !== 0) throw new Error('turi_wasm_init failed');
+    // No fallback to the tree-walker: it has no raylib, so a program the
+    // engine cannot take is answered {engine: 'refused', reason} instead
+    // (raylib-web-playground-plan J3 e).
+    m._turi_wasm_jit_set_fallback(0);
     // The spices the engine carries, embedded at /spices/<name>/src: each goes
     // on the module search path, so `(import raylib/core)` resolves
     // (raylib-web-playground-plan 5.3, prerequisite 9).

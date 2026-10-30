@@ -4,13 +4,13 @@ The raylib playground for the [Turmeric](https://github.com/turmeric-lang/turmer
 language, at **play.turmeric-lang.com**: write a program in the browser and run
 it on the compiler's own engine, with a screen for it to draw on.
 
-> Status: the P0 spike passes. With the arcade module (turmeric's
-> `tools/wasm-jit-spike/arcade/build.sh`: the JSPI JIT module with raylib's
-> web archive and the raylib and math spices embedded) the screen pane runs
-> the raylib quick start, a `run-main-loop` program and a blocking frame
-> loop under JSPI; `web/tests/raylib.spec.js` checks all three. CI still
-> builds the plain engine (no raylib), on which that spec skips; making the
-> arcade module the CI engine is P1.
+> Status: P1. The engine is turmeric's arcade module (its `tur_wasm_arcade`
+> target: the JSPI JIT module with raylib's web archive and the raylib and
+> math spices embedded), built in CI from the commit `scripts/engine.lock`
+> pins. The screen pane runs the raylib quick start, a `run-main-loop`
+> program and a blocking frame loop under JSPI, and reports a program the
+> engine refuses instead of handing it to an interpreter without raylib;
+> `web/tests/` checks each.
 
 The plan is
 [docs/upcoming/raylib-web-playground-plan.md](https://github.com/turmeric-lang/turmeric/blob/main/docs/upcoming/raylib-web-playground-plan.md)
@@ -48,7 +48,9 @@ of `web/screen.js`.
 The engine is built from a turmeric checkout at the commit
 `scripts/engine.lock` names (turmeric publishes no JSPI module yet). It needs
 the [emsdk](https://emscripten.org/docs/getting_started/downloads.html)
-environment, cmake, python3 and make:
+environment, cmake, python3, make and git. turmeric-spices and raylib are
+checked out at the lock's `SPICES_REF` and `RAYLIB_REF` under `.engine-deps/`
+(or name your own with `ARCADE_SPICES=` / `ARCADE_RAYLIB=`):
 
 ```sh
 git clone https://github.com/turmeric-lang/turmeric ../turmeric
@@ -56,7 +58,7 @@ git -C ../turmeric checkout "$(sed -n 's/^TURMERIC_REF=//p' scripts/engine.lock)
 bash scripts/fetch-engine.sh ../turmeric      # -> web/public/engine/
 ```
 
-The first build compiles the whole module (a few minutes); a rerun relinks.
+The first build compiles the whole module (about a minute); a rerun relinks.
 Then the site:
 
 ```sh
@@ -76,7 +78,7 @@ build).
 ## Layout
 
 ```
-scripts/engine.lock        the turmeric commit and emsdk version the engine is built from
+scripts/engine.lock        the turmeric, turmeric-spices and raylib refs and emsdk version the engine is built from
 scripts/fetch-engine.sh    builds the engine into web/public/engine/
 web/index.html, main.js    the page: editor, Run/Stop, Examples, console
 web/screen.html, screen.js the screen pane's shell, one run per iframe

@@ -8,6 +8,7 @@ import { EXAMPLES } from './examples.js';
 import { createEditor } from './editor.js';
 import { createLspClient } from './lsp-client.js';
 import { initSpicesMenu } from './spices-menu.js';
+import { sharedProgram, followEditor, shareLink } from './share.js';
 
 // The textarea until Monaco has loaded (editor.js), then Monaco.
 let editor = null;
@@ -150,7 +151,17 @@ function startLsp() {
 // window.arcade (what the tests drive) appears once the editor is up, Monaco
 // or the textarea it falls back to.
 async function startEditor() {
+    // A #code= link opens on its program instead of the first example.
+    const shared = await sharedProgram();
+    if (shared) textarea.value = shared;
     editor = await createEditor(textarea);
+    followEditor(editor);
+    document.getElementById('share-btn').addEventListener('click', async () => {
+        const { url, copied } = await shareLink(editor);
+        if (!url) appendLine('Error: could not make a link to this program', 'err');
+        else if (copied) status.textContent = 'link copied';
+        else appendLine(`share link: ${url}`, 'engine');
+    });
     editor.onRun(() => run());
     if (editor.kind === 'monaco') {
         const once = editor.editor.onDidFocusEditorText(() => { once.dispose(); startLsp(); });

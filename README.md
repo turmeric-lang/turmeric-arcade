@@ -93,6 +93,7 @@ web/lsp-client.js          the Monaco adapter for `tur lsp`, from Try's (its wor
                            the server is engine/lsp-worker.js, started on the editor's first focus
 web/screen.html, screen.js the screen pane's shell, one run per iframe
 web/examples.js            reads examples/ into the menu at build time
+web/public/theme.js        light/dark before first paint (Try Turmeric's switch); the OS's until picked
 web/csp.js                 the one Content-Security-Policy
 web/worker.js              the Cloudflare Worker in front of the static site
 web/tests/                 Playwright: run, streaming, Stop, stack overflow, refusals,

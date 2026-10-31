@@ -9,13 +9,17 @@
 
 import { configureTurmeric } from './editor-language.js';
 
-// One dark theme over Monaco's, in the page's colours (style.css :root).
-const THEME = 'arcade-dark';
+// The page's theme (public/theme.js: light or dark, the OS's until the
+// visitor picks), over Monaco's vs / vs-dark, in the page's colours
+// (style.css).  Monaco takes colours as a JS object, so the theme is rebuilt
+// from the stylesheet on each tur-themechange.
+const pageTheme = () => (document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
 function defineTheme(monaco) {
     const css = getComputedStyle(document.documentElement);
     const v = (name, fallback) => (css.getPropertyValue(name).trim() || fallback);
-    monaco.editor.defineTheme(THEME, {
-        base: 'vs-dark',
+    const name = `arcade-${pageTheme()}`;
+    monaco.editor.defineTheme(name, {
+        base: pageTheme() === 'light' ? 'vs' : 'vs-dark',
         inherit: true,
         rules: [],
         colors: {
@@ -25,6 +29,7 @@ function defineTheme(monaco) {
             'editorCursor.foreground': v('--accent', '#e6a23c'),
         },
     });
+    return name;
 }
 
 function textareaEditor(textarea) {
@@ -54,7 +59,8 @@ export async function createEditor(textarea) {
         return fallback;
     }
     configureTurmeric(monaco);
-    defineTheme(monaco);
+    const theme = defineTheme(monaco);
+    document.addEventListener('tur-themechange', () => monaco.editor.setTheme(defineTheme(monaco)));
     const host = document.createElement('div');
     host.id = 'monaco';
     host.className = 'monaco-host';
@@ -62,7 +68,7 @@ export async function createEditor(textarea) {
     const editor = monaco.editor.create(host, {
         value: textarea.value,
         language: 'turmeric',
-        theme: THEME,
+        theme,
         automaticLayout: true,
         tabSize: 2,
         insertSpaces: true,

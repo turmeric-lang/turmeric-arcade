@@ -38,6 +38,14 @@ body {
 #run-btn { border-color: var(--accent); }
 .examples select { font: inherit; margin-left: 4px; background: var(--panel); color: var(--fg); border: 1px solid var(--border); }
 .status { color: var(--dim); margin-left: auto; font-family: var(--mono); font-size: 12px; }
+.spices { position: relative; }
+.spices > summary { cursor: pointer; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); list-style: none; }
+.spices > summary::-webkit-details-marker { display: none; }
+.spices-panel { position: absolute; z-index: 10; top: calc(100% + 4px); left: 0; width: 340px; padding: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 4px; }
+.spices-help { margin: 0 0 8px; color: var(--dim); font-size: 12px; }
+.spice { display: grid; grid-template-columns: auto auto 1fr; gap: 6px; align-items: baseline; padding: 3px 0; cursor: pointer; }
+.spice-name { font-family: var(--mono); }
+.spice-desc { color: var(--dim); font-size: 12px; }
 .lsp-status { color: var(--dim); font-family: var(--mono); font-size: 12px; }
 .lsp-status[data-state="idle"]::before { content: "\25CF "; color: #7ee787; }
 .lsp-status[data-state="booting"]::before,

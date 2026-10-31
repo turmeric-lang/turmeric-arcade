@@ -7,6 +7,7 @@
 import { EXAMPLES } from './examples.js';
 import { createEditor } from './editor.js';
 import { createLspClient } from './lsp-client.js';
+import { initSpicesMenu } from './spices-menu.js';
 
 // The textarea until Monaco has loaded (editor.js), then Monaco.
 let editor = null;
@@ -155,6 +156,7 @@ async function startEditor() {
         const once = editor.editor.onDidFocusEditorText(() => { once.dispose(); startLsp(); });
     }
     examples.addEventListener('change', () => { editor.setValue(EXAMPLES[examples.value].src); });
+    initSpicesMenu(editor, document.getElementById('spice-list'));
     window.arcade = {
         run,
         stop,

@@ -29,6 +29,12 @@
     <span id="status" class="status" aria-live="polite"></span>
     <span id="lsp-status" class="lsp-status" hidden></span>
   </header>
+  <div id="no-jspi" class="no-jspi" role="alert" hidden>
+    Turmeric Arcade runs programs on an engine that needs JavaScript Promise
+    Integration (JSPI), which this browser does not have. Chrome and Edge 137
+    or later have it today; Firefox and Safari have it on the way. You can
+    still read, edit and share programs here.
+  </div>
   <main class="panes">
     <section class="editor-pane">
       <textarea id="editor" spellcheck="false" aria-label="program"></textarea>

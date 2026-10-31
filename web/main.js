@@ -58,10 +58,26 @@ function stop(quiet) {
     setRunning(false);
 }
 
+// The engine is a JSPI build (raylib-web-playground-plan J4): in a browser
+// without JSPI it cannot even load, so Run is off and the banner says why,
+// while the editor, examples, Spices menu and sharing still work.
+const HAS_JSPI = typeof WebAssembly === 'object' && 'Suspending' in WebAssembly;
+const NO_JSPI_REASON = 'This browser has no JSPI (JavaScript Promise Integration), which the engine needs: '
+    + 'Chrome or Edge 137 or later has it.';
+if (!HAS_JSPI) {
+    document.getElementById('no-jspi').hidden = false;
+    runBtn.disabled = true;
+    runBtn.title = NO_JSPI_REASON;
+}
+
 function run(src) {
+    if (src !== undefined && editor) editor.setValue(src);
+    if (!HAS_JSPI) {
+        appendLine(`Error: ${NO_JSPI_REASON}`, 'err');
+        return;
+    }
     stop(true);
     lastBoot = null;
-    if (src !== undefined) editor.setValue(src);
     pending = { src: editor.getValue(), args: '' };
     const f = document.createElement('iframe');
     f.setAttribute('sandbox', 'allow-scripts allow-same-origin');
@@ -86,7 +102,7 @@ window.addEventListener('message', (e) => {
             lastBoot = m;
             if (m.ok) {
                 const spices = m.spices && m.spices.length ? `, spices: ${m.spices.join(', ')}` : '';
-                status.textContent = `engine up in ${ms(m.ms)}${spices}${m.jspi ? '' : ' (no JSPI: a frame loop cannot yield)'}`;
+                status.textContent = `engine up in ${ms(m.ms)}${spices}`;
             } else {
                 status.textContent = '';
                 appendLine(`Error: the engine did not start: ${m.error}`, 'err');

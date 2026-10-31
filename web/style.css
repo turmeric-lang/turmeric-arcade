@@ -65,6 +65,7 @@ body {
 .lsp-status[data-state="idle"]::before { content: "\25CF "; color: var(--ok); }
 .lsp-status[data-state="booting"]::before,
 .lsp-status[data-state="analyzing"]::before { content: "\25CF "; color: var(--accent); }
+.no-jspi { padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--panel); color: var(--err); }
 .panes {
   flex: 1;
   display: grid;

@@ -114,7 +114,8 @@ test('the Examples menu is the examples/ tree, in file order', async ({ page }) 
                              'The same loop as a frame callback', 'Hello (no screen)',
                              'A loop that sleeps between steps', 'Fibonacci',
                              'Bouncing ball', 'Bouncing ball, as a frame callback', 'Pong',
-                             "Conway's Life"]);
+                             "Conway's Life", 'A second spice: raygui',
+                             'A third spice: entities and systems']);
     await page.selectOption('#examples', 'hello');
     await page.click('#run-btn');
     await expect(consoleEl(page)).toContainText('hello, arcade', { timeout: 45_000 });

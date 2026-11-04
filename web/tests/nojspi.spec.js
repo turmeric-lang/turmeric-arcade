@@ -33,6 +33,9 @@ test('without JSPI the editor, examples and sharing still work', async ({ page }
     expect(await page.evaluate(() => window.arcade.editorKind)).toBe('monaco');
     await page.selectOption('#examples', 'fibonacci');
     expect(await page.evaluate(() => window.arcade.getSource())).toContain('(fib 27)');
+    // An example picked is its ?example= link; edited, it rides as #code=.
+    await expect.poll(() => page.evaluate(() => location.search)).toBe('?example=fibonacci');
+    await page.evaluate(() => window.arcade.setSource(window.arcade.getSource() + '\n;; edited\n'));
     await expect.poll(() => page.evaluate(() => location.hash)).toMatch(/^#code=/);
 });
 

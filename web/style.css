@@ -62,6 +62,7 @@ body {
 .spice-name { font-family: var(--mono); }
 .spice-desc { color: var(--dim); font-size: 12px; }
 .lsp-status { color: var(--dim); font-family: var(--mono); font-size: 12px; }
+.fps { color: var(--ok); font-family: var(--mono); font-size: 12px; }
 .lsp-status[data-state="idle"]::before { content: "\25CF "; color: var(--ok); }
 .lsp-status[data-state="booting"]::before,
 .lsp-status[data-state="analyzing"]::before { content: "\25CF "; color: var(--accent); }
@@ -107,9 +108,24 @@ body {
 }
 .console .err { color: var(--err); }
 .console .engine { color: var(--dim); }
+/* A phone or a narrow window (raylib-web-playground-plan P4): one column,
+   the screen first and as wide as the page, the editor under it, the console
+   last; the page scrolls instead of squeezing three panes into one screen.
+   The toolbar wraps, its controls big enough to tap. */
 @media (max-width: 800px) {
-  .panes { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
-  .editor-pane { border-right: 0; border-bottom: 1px solid var(--border); }
+  html, body { height: auto; }
+  body { min-height: 100%; }
+  .toolbar { flex-wrap: wrap; gap: 6px 8px; padding: 6px 10px; }
+  .toolbar h1 { flex-basis: 100%; margin: 0; }
+  .toolbar button, .spices > summary { min-height: 36px; padding: 6px 12px; }
+  .examples select { min-height: 36px; max-width: 60vw; }
+  .status { margin-left: 0; flex-basis: 100%; order: 10; }
+  .spices-panel { position: fixed; left: 10px; right: 10px; top: auto; width: auto; }
+  .panes { display: flex; flex-direction: column; }
+  .right { display: contents; }
+  .screen-host { order: 1; width: 100%; max-height: none; }
+  .editor-pane { order: 2; height: 60vh; border-right: 0; border-bottom: 1px solid var(--border); }
+  .console { order: 3; flex: none; min-height: 8em; max-height: 40vh; }
 }
 
 /* screen.html, inside the iframe */

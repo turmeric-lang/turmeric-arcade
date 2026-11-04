@@ -126,39 +126,56 @@ is a turmeric change (`TUR_ARCADE_SPICE_LIST` in its
 ## Building
 
 The engine is built from a turmeric checkout at the commit
-`scripts/engine.lock` names (turmeric publishes no JSPI module yet). It needs
-the [emsdk](https://emscripten.org/docs/getting_started/downloads.html)
-environment, cmake, python3, make and git. turmeric-spices and raylib are
-checked out at the lock's `SPICES_REF` and `RAYLIB_REF` under `.engine-deps/`
-(or name your own with `ARCADE_SPICES=` / `ARCADE_RAYLIB=`):
+`scripts/engine.lock` names (turmeric publishes no JSPI module yet), with the
+Emscripten version the lock names. turmeric-spices and raylib are checked out
+at the lock's `SPICES_REF` and `RAYLIB_REF` under `.engine-deps/` (or name
+your own with `ARCADE_SPICES=` / `ARCADE_RAYLIB=`).
+
+### Setting up from scratch
+
+You need [just](https://github.com/casey/just), git, cmake, make, python3 and
+Node 22. Emscripten is installed by the steps below; a system `emcc` (Homebrew's,
+say) is not used once `just emsdk` has run, because turmeric's build wants the
+SDK's own layout.
 
 ```sh
-git clone https://github.com/turmeric-lang/turmeric ../turmeric
-git -C ../turmeric checkout "$(sed -n 's/^TURMERIC_REF=//p' scripts/engine.lock)"
-bash scripts/fetch-engine.sh ../turmeric      # -> web/public/engine/
+git clone https://github.com/turmeric-lang/turmeric ../turmeric   # once; a bare repo works too
+just checkout-turmeric    # turmeric at engine.lock's commit (a worktree in .engine-deps/turmeric if ../turmeric is bare)
+just emsdk                # the pinned Emscripten, into .engine-deps/emsdk
+just engine               # builds web/public/engine/ (first build ~1-2 min); if the
+                          #   checkout went to .engine-deps/turmeric: just engine .engine-deps/turmeric
+just install              # the site's npm dependencies
+npx --prefix web playwright install chromium    # once, for the tests
+just dev                  # http://localhost:3100 (never 3000: that is Try Turmeric's)
 ```
 
-The first build compiles the whole module (about a minute); a rerun relinks.
-Then the site:
+`TURMERIC_DIR=<path>` points every recipe at another turmeric checkout.
+If you change `engine.lock`, rerun `just checkout-turmeric`, and `just emsdk`
+if the Emscripten version moved. If a build fails with a path from an older
+compiler in it, delete `build-wasm/` in the turmeric checkout and rerun.
+
+### Day to day
 
 ```sh
-cd web
-npm install
-npm run dev          # http://localhost:3100 (never 3000: that is Try Turmeric's)
-npm test             # Playwright, in a Chromium with JSPI
-npm run build        # dist/client + the Worker
-npm run deploy       # wrangler deploy to play.turmeric-lang.com
+just dev       # dev server
+just test      # Playwright, in a Chromium with JSPI (just test tests/spices.spec.js for one file)
+just build     # dist/client + the Worker
+just deploy    # build, then wrangler deploy to play.turmeric-lang.com (needs `npx wrangler login`)
+just run 09-pong    # an example natively, with `tur` on PATH
+just               # lists every recipe
 ```
 
-`ARCADE_CHROMIUM=/path/to/chromium npm test` runs the suite in another
+`ARCADE_CHROMIUM=/path/to/chromium just test` runs the suite in another
 Chromium than the one Playwright installed. Without `web/public/engine/` the
 suite skips with a notice (in CI it fails: a missing engine is a broken
-build).
+build). The recipes are thin wrappers: `scripts/fetch-engine.sh` and the
+`npm` scripts in `web/` work on their own too.
 
 ## Layout
 
 ```
 scripts/engine.lock        the turmeric, turmeric-spices and raylib refs and emsdk version the engine is built from
+Justfile                   the common tasks (`just` lists them)
 scripts/fetch-engine.sh    builds the engine into web/public/engine/ (with spices/ and spices.js)
 scripts/subset-iosevka.sh  regenerates web/fonts/ (the C playground's script, this repo's paths)
 examples/                  the Examples menu: one program per file, titled by its ;;; header

@@ -1,0 +1,145 @@
+;;; life -- Conway's Life
+;;;
+;;; A 64x36 torus in a double-buffered vec of 0/1 ints, stepped every frame.
+;;; Click a cell to flip it, Space pauses, R scatters a new random field.
+;;; Every 60 generations the live count goes to the console, and the field
+;;; comes from a fixed seed, so the page and a native run print the same
+;;; numbers.
+;;;
+;;; This is the example that shows the engine's speed honestly. The step is
+;;; written plainly -- each cell reads its eight neighbours through `cell`,
+;;; which wraps at the edges -- and on the page that costs about 20 ms a
+;;; generation (2,304 cells; 96x54 took 35 ms, a whole 30 fps frame). Hoisting
+;;; the wrap out of the inner loop would buy some back.
+;;;
+;;; Runs natively too: tur --enable=script-deps run 10-life.tur
+(defscript :spices #map{"raylib" #map{:url "https://github.com/turmeric-lang/turmeric-spices"
+                                      :ref "c5864091a3487d8219761e8f489e97ce6a584a86"
+                                      :subdir "spices/raylib"}})
+
+(defmodule life
+  (export)
+  (import raylib/core   :refer [init-window window-should-close begin-drawing
+                                end-drawing clear-background set-target-fps])
+  (import raylib/shapes :refer [draw-rectangle])
+  (import raylib/text   :refer [draw-text])
+  (import raylib/input  :refer [is-key-pressed is-mouse-button-pressed])
+  (import raylib/color  :refer [color raywhite])
+  (import raylib/types  :refer [Color])
+  (load "stdlib/str-build.tur")   ; int->str, str-concat
+
+  (def W 64) (def H 36)
+  (def size 6)                         ; a cell is 6 px and a 1 px gap
+  (def left 16) (def top 9)            ; the grid, centred in 480x270
+  (def key-space 32) (def key-r 82)
+
+  ;; The mouse, in pixels. A few lines of C, compiled with the program.
+  (defn mouse-x [] : int
+    ```c
+    #include <raylib.h>
+    return GetMouseX();
+    ```)
+  (defn mouse-y [] : int
+    ```c
+    #include <raylib.h>
+    return GetMouseY();
+    ```)
+
+  (defn cell [g : (Vec int) x : int y : int] : int
+    (vec-get g (+ (* (mod (+ y H) H) W) (mod (+ x W) W))))
+
+  (defn neighbours [g : (Vec int) x : int y : int] : int
+    (+ (cell g (- x 1) (- y 1)) (cell g x (- y 1)) (cell g (+ x 1) (- y 1))
+       (cell g (- x 1) y)                         (cell g (+ x 1) y)
+       (cell g (- x 1) (+ y 1)) (cell g x (+ y 1)) (cell g (+ x 1) (+ y 1))))
+
+  ;; One generation, from src into dst.
+  (defn step [src : (Vec int) dst : (Vec int)] : int
+    (let [^mut y 0]
+      (while (< y H)
+        (let [^mut x 0]
+          (while (< x W)
+            (let [n (neighbours src x y)
+                  a (cell src x y)]
+              (vec-set! dst (+ (* y W) x) (if (or (= n 3) (and (= a 1) (= n 2))) 1 0)))
+            (set! x (+ x 1))))
+        (set! y (+ y 1))))
+    0)
+
+  (defn live [g : (Vec int)] : int
+    (let [^mut i 0 ^mut n 0]
+      (while (< i (* W H))
+        (set! n (+ n (vec-get g i)))
+        (set! i (+ i 1)))
+      n))
+
+  ;; A field about 30% alive, from a linear congruential generator; returns
+  ;; the seed to start the next one from.
+  (defn scatter [g : (Vec int) seed : int] : int
+    (let [^mut s seed ^mut i 0]
+      (while (< i (* W H))
+        (set! s (mod (+ (* s 1103515245) 12345) 2147483648))
+        (vec-set! g i (if (< (mod (/ s 65536) 100) 30) 1 0))
+        (set! i (+ i 1)))
+      s))
+
+  (defn draw-grid [g : (Vec int) alive : Color] : int
+    (let [^mut y 0]
+      (while (< y H)
+        (let [^mut x 0]
+          (while (< x W)
+            (when (= 1 (vec-get g (+ (* y W) x)))
+              (draw-rectangle (+ left (* x (+ size 1))) (+ top (* y (+ size 1)))
+                              size size alive))
+            (set! x (+ x 1))))
+        (set! y (+ y 1))))
+    0)
+
+  ;; The cell under the mouse flips, if the mouse is over the grid.
+  (defn toggle-at-mouse [g : (Vec int)] : int
+    (let [x (/ (- (mouse-x) left) (+ size 1))
+          y (/ (- (mouse-y) top) (+ size 1))]
+      (when (and (>= (mouse-x) left) (< x W) (>= (mouse-y) top) (< y H))
+        (vec-set! g (+ (* y W) x) (- 1 (vec-get g (+ (* y W) x))))))
+    0)
+
+  (defn report [gen : int g : (Vec int)] : int
+    (println (str-concat "generation " (str-concat (int->str gen)
+                                                   (str-concat ": " (int->str (live g))))))
+    0)
+
+  (defn main [] : int
+    (init-window 480 270 "life")
+    (set-target-fps 30)
+    (let [bg    (raywhite)
+          alive (color 30 120 80 255)
+          dim   (color 120 120 120 255)
+          a     (vec-new)
+          b     (vec-new)
+          ^mut i 0]
+      (while (< i (* W H))
+        (vec-push! a 0)
+        (vec-push! b 0)
+        (set! i (+ i 1)))
+      (let [^mut seed (scatter a 12345)
+            ^mut gen 0
+            ^mut paused false]
+        (report gen a)
+        (while (not (window-should-close))
+          (when (is-key-pressed key-space) (set! paused (not paused)))
+          (when (is-key-pressed key-r)
+            (set! seed (scatter (if (= 0 (mod gen 2)) a b) seed)))
+          (when (is-mouse-button-pressed 0)
+            (toggle-at-mouse (if (= 0 (mod gen 2)) a b)))
+          (when (not paused)
+            (if (= 0 (mod gen 2)) (step a b) (step b a))
+            (set! gen (+ gen 1))
+            (when (= 0 (mod gen 60)) (report gen (if (= 0 (mod gen 2)) a b))))
+          (begin-drawing)
+          (clear-background bg)
+          (draw-grid (if (= 0 (mod gen 2)) a b) alive)
+          (when paused
+            (draw-rectangle 16 248 448 14 bg)
+            (draw-text "paused -- click to draw, Space to run" 20 250 10 dim))
+          (end-drawing))))
+    0))

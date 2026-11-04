@@ -1,0 +1,64 @@
+;;; bouncing-ball -- Bouncing ball
+;;;
+;;; Motion, dt, the keyboard and text: a ball bounces around the pane, the
+;;; arrow keys push it, R puts it back. Its state is four ^mut let bindings
+;;; updated with set! (a plain binding is immutable).
+;;;
+;;; The header names the spice it uses, so the same file runs natively:
+;;;   tur --enable=script-deps run 07-bouncing-ball.tur
+(defscript :spices #map{"raylib" #map{:url "https://github.com/turmeric-lang/turmeric-spices"
+                                      :ref "c5864091a3487d8219761e8f489e97ce6a584a86"
+                                      :subdir "spices/raylib"}})
+
+(defmodule bouncing-ball
+  (export)
+  (load "stdlib/math.tur")   ; float->int
+  (import raylib/core   :refer [init-window window-should-close begin-drawing
+                                end-drawing clear-background set-target-fps
+                                get-frame-time])
+  (import raylib/shapes :refer [draw-circle])
+  (import raylib/text   :refer [draw-text])
+  (import raylib/input  :refer [is-key-down is-key-pressed])
+  (import raylib/color  :refer [raywhite black orange])
+
+  (def key-right 262) (def key-left 263) (def key-down 264) (def key-up 265)
+  (def key-r 82)
+  (def width 480) (def height 270) (def radius 12.0)
+  (def right-wall 468.0) (def bottom-wall 258.0)   ; the size, less the radius
+  (def push 300.0)
+
+  (defn main [] : int
+    (init-window width height "bouncing ball")
+    (set-target-fps 60)
+    ;; raylib's colours are heap handles: make them once, not every frame.
+    (let [bg     (raywhite)
+          ink    (black)
+          ball   (orange)
+          ^mut x  240.5
+          ^mut y  100.5
+          ^mut vx 140.5
+          ^mut vy 90.5]
+      (while (not (window-should-close))
+        (let [dt (get-frame-time)]
+          (when (is-key-down key-left)  (set! vx (- vx (* push dt))))
+          (when (is-key-down key-right) (set! vx (+ vx (* push dt))))
+          (when (is-key-down key-up)    (set! vy (- vy (* push dt))))
+          (when (is-key-down key-down)  (set! vy (+ vy (* push dt))))
+          (when (is-key-pressed key-r)
+            (set! x 240.5) (set! y 100.5) (set! vx 140.5) (set! vy 90.5))
+          (set! x (+ x (* vx dt)))
+          (set! y (+ y (* vy dt)))
+          ;; Bounce off a wall only while moving into it, so a ball pushed
+          ;; past the edge comes back instead of shaking there.
+          (when (or (and (< x radius) (< vx 0.0))
+                    (and (> x right-wall) (> vx 0.0)))
+            (set! vx (- 0.0 vx)))
+          (when (or (and (< y radius) (< vy 0.0))
+                    (and (> y bottom-wall) (> vy 0.0)))
+            (set! vy (- 0.0 vy)))
+          (begin-drawing)
+          (clear-background bg)
+          (draw-circle (float->int x) (float->int y) radius ball)
+          (draw-text "arrows: push   R: reset" 10 10 14 ink)
+          (end-drawing))))
+    0))

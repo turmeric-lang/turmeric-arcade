@@ -4,15 +4,13 @@ The raylib playground for the [Turmeric](https://github.com/turmeric-lang/turmer
 language, at **play.turmeric-lang.com**: write a program in the browser and run
 it on the compiler's own engine, with a screen for it to draw on.
 
-> Status: P1. The engine is turmeric's arcade module (its `tur_wasm_arcade`
-> target: the JSPI JIT module with raylib's web archive and the raylib and
-> math spices embedded), built in CI from the commit `scripts/engine.lock`
-> pins. The screen pane runs the raylib quick start, a `run-main-loop`
-> program and a blocking frame loop under JSPI, and reports a program the
-> engine refuses instead of handing it to an interpreter without raylib.
-> The spices a program imports (or names in a `defscript` header) are
-> fetched from the engine's packages when it runs, and the Examples menu is
-> the `examples/` tree, which `web/tests/` runs.
+> Status: P3. The engine is turmeric's arcade module (its `tur_wasm_arcade`
+> target: the JSPI JIT module with raylib's web archive linked in), built in
+> CI from the commit `scripts/engine.lock` pins. The page has Monaco with the
+> language server, a Spices menu, share links, light and dark themes, and the
+> screen pane; the Examples menu is the `examples/` tree, including the
+> plan's section 8 set -- a bouncing ball, its frame-callback twin, pong and
+> Life -- each verified natively and in the page (`web/tests/`).
 
 The plan is
 [docs/upcoming/raylib-web-playground-plan.md](https://github.com/turmeric-lang/turmeric/blob/main/docs/upcoming/raylib-web-playground-plan.md)
@@ -44,6 +42,68 @@ of `web/screen.js`.
 - The page is cross-origin isolated (COOP/COEP; the engine is a pthreads
   build) and carries one Content-Security-Policy (`web/csp.js`), sent by the
   dev server, stamped into the built `_headers`, and set by `web/worker.js`.
+
+## Writing a program
+
+A program is an ordinary Turmeric module with a `main`. Its first form may be
+a `defscript` header naming the spices it uses -- the Spices menu writes one,
+pinned to the turmeric-spices commit the engine's packages were built from:
+
+```turmeric
+(defscript :spices #map{"raylib" #map{:url "https://github.com/turmeric-lang/turmeric-spices"
+                                      :ref "<commit>" :subdir "spices/raylib"}})
+(defmodule ball
+  (export)
+  (import raylib/core  :refer [init-window window-should-close begin-drawing
+                               end-drawing clear-background])
+  (import raylib/color :refer [raywhite])
+  (defn main [] : int
+    (init-window 480 270 "ball")
+    (let [bg (raywhite)]
+      (while (not (window-should-close))
+        (begin-drawing)
+        (clear-background bg)
+        (end-drawing)))
+    0))
+```
+
+- **The same file runs natively.** Copy it out and run
+  `tur --enable=script-deps run ball.tur`: the header fetches the spices it
+  names (raylib's C library is built once, into the script cache). On the
+  page the header is satisfied from the engine's packages, and a spice the
+  engine does not carry is refused by name rather than fetched. Without a
+  header, the spices a program imports are mounted all the same.
+- **Both loop styles run.** The blocking `while (not (window-should-close))`
+  loop of raylib's own examples works as written: raylib's sleep at the end
+  of each frame suspends the program (JSPI) and lets the page breathe. The
+  callback style -- `run-main-loop`, or `with-web-game-loop` from
+  `raylib/web` -- hands the browser a closure to call every frame; `main`
+  returns at once, so keep the frame's state in globals or the closure.
+- **The pane is 480x270.** Keys and the mouse reach the program once the
+  canvas has focus (a click on it).
+- **Make raylib's colours once.** `(raywhite)`, `(color r g b a)` and the
+  like each allocate a handle; call them before the loop, not in it.
+- **Two engine limits to steer around in a blocking loop** (both are open
+  in turmeric's tracker): a `println` written directly in `main`'s loop body
+  keeps 16 bytes per call until `main` returns -- put it in a helper `defn`,
+  which returns every frame; and a frame loop written as mutual tail calls
+  (`tick` calling `render` calling `tick`) grows the stack -- use `while`.
+- **The engine compiles, it does not interpret.** A program's inline C is
+  compiled in the page with the rest of it (Life reads the mouse that way).
+  The interpreter fallback is off: a program the engine cannot compile (one
+  that starts threads, say) is reported as refused.
+- **Speed.** The engine is MIR's interpreter on wasm, several times slower
+  than native code: Life's 64x36 step is about 20 ms, which is why it is
+  64x36 and not 96x54.
+
+The examples, in the order the menu lists them after the first six:
+
+| File | Shows |
+|---|---|
+| `07-bouncing-ball.tur` | motion, `dt`, held keys, text; state in `^mut` bindings |
+| `08-bouncing-ball-callback.tur` | the same as a frame callback (`with-web-game-loop`); web only |
+| `09-pong.tur` | two paddles, collision, a score centred with `measure-text`, Space to serve |
+| `10-life.tur` | a `vec` double-buffered at frame rate, the mouse through inline C, counts a native run prints too |
 
 ## Building
 

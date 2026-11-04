@@ -92,7 +92,7 @@ function pwa() {
     manifest: {
       name: 'Turmeric Arcade',
       short_name: 'Arcade',
-      description: 'raylib, compiled in your browser: write a game in Turmeric and press Run.',
+      description: 'Make games using raylib and other libraries, and have them JIT-compiled in your browser.',
       start_url: '/',
       scope: '/',
       display: 'standalone',

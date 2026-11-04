@@ -3,8 +3,8 @@
      turmeric-lang.com's og-image.png: its ground, type and palette, the
      arcade's badge, and screens of the examples where Turmeric's has a code
      card. Rendered by make-images.mjs; ?v=a|b|c picks the right-hand side:
-     a = one screen in a window, b = a code card with a running screen over it
-     (the one published), c = four screens. -->
+     a = one screen in a window, b = a code card with a running screen over it,
+     c = four screens (the one published). -->
 <meta charset="utf-8">
 <style>
 @font-face { font-family: 'Iosevka'; src: url(../../web/fonts/iosevka-400.woff2); font-weight: 400; }
@@ -21,7 +21,7 @@ body { width: 1200px; height: 630px; background: var(--bg); color: var(--fg); po
 .brand img { width: 56px; height: 56px; }
 .brand span { font: 600 40px/1 'Iosevka', monospace; letter-spacing: .01em; }
 .brand .t { color: var(--orange); } .brand .a { color: var(--teal); }
-h1 { margin-top: 92px; font: 500 52px/1.12 'DM Sans', sans-serif; letter-spacing: -.01em; }
+h1 { margin-top: 96px; font: 500 47px/1.14 'DM Sans', sans-serif; letter-spacing: -.015em; white-space: nowrap; }
 h1 em { color: var(--green); font-style: italic; }
 p { margin-top: 26px; font: 400 23px/1.5 'DM Sans', sans-serif; color: var(--dim); max-width: 520px; }
 .url { position: absolute; left: 72px; bottom: 66px; font: 600 25px/1 'Iosevka', monospace; color: var(--orange); }
@@ -41,13 +41,13 @@ pre { padding: 22px 26px; font: 400 19px/1.65 'Iosevka', monospace; color: var(-
 <body>
 <div class="left">
   <div class="brand"><img src="../../web/public/favicon.svg"><span><span class="t">Turmeric</span> <span class="a">Arcade</span></span></div>
-  <h1>raylib, <em>compiled</em><br>in your <em>browser</em></h1>
-  <p>Write a game in Turmeric and press Run: it is compiled and drawn in the page. The same file runs natively.</p>
+  <h1>Write <em>games</em> in Turmeric,<br>run <em>anywhere</em></h1>
+  <p>Make games using raylib and other libraries, and have them JIT-compiled in your browser.</p>
 </div>
 <div class="url">https://play.turmeric-lang.com</div>
 <div id="right"></div>
 <script>
-const v = new URLSearchParams(location.search).get('v') || 'b';
+const v = new URLSearchParams(location.search).get('v') || 'c';
 const right = document.getElementById('right');
 const code = `<pre><span class="c">;; the frame loop, as raylib writes it</span>
 <span class="d">(</span><span class="k">while</span> <span class="d">(</span><span class="f">not</span> <span class="d">(</span><span class="f">window-should-close</span><span class="d">))</span>
@@ -67,7 +67,7 @@ if (v === 'a') {
     <div class="bar" style="height:36px; font-size:13px"><span class="dot"></span>running<span class="fps">60 fps</span></div>
     <img class="screen" src="shots/shot-pong.png"></div>`;
 } else {
-  right.innerHTML = `<div class="grid" style="position:absolute; left:640px; top:110px; width:490px">
+  right.innerHTML = `<div class="grid" style="position:absolute; left:648px; top:142px; width:480px">
     <img src="shots/shot-ecs-circles.png"><img src="shots/shot-pong.png"><img src="shots/shot-life.png"><img src="shots/shot-raygui-tuner.png"></div>`;
 }
 </script>

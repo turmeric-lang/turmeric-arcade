@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
 test('the page carries Open Graph and Twitter tags for its card', async ({ page }) => {
     await page.goto('/');
     const meta = (sel) => page.locator(sel).getAttribute('content');
-    expect(await meta('meta[property="og:title"]')).toBe('Turmeric Arcade');
+    expect(await meta('meta[property="og:title"]')).toBe('Turmeric Arcade: write games in Turmeric, run anywhere');
     expect(await meta('meta[property="og:image"]')).toBe('https://play.turmeric-lang.com/og-image.png');
     expect(await meta('meta[property="og:image:width"]')).toBe('1200');
     expect(await meta('meta[name="twitter:card"]')).toBe('summary_large_image');

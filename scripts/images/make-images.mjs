@@ -2,7 +2,7 @@
 // Chromium from sources in this directory and web/public/favicon.svg (the TA
 // badge), into web/public/:
 //
-//   og-image.png                 1200x630, og.html (variant b; see its header)
+//   og-image.png                 1200x630, og.html (variant c; see its header)
 //   icons/icon-192.png, -512     the badge as it is (rounded, transparent corners)
 //   icons/icon-maskable-512.png  full bleed, the letters inside the safe zone
 //   icons/apple-touch-icon.png   180x180, full bleed (iOS rounds it itself)
@@ -52,7 +52,7 @@ try {
         await card.waitForTimeout(200);
         await card.screenshot({ path: out });
     };
-    await render('b', path.join(PUBLIC, 'og-image.png'));
+    await render('c', path.join(PUBLIC, 'og-image.png'));
     const variants = opt('--variants');
     if (variants) for (const v of ['a', 'b', 'c']) await render(v, path.join(variants, `og-${v}.png`));
 

@@ -85,7 +85,7 @@ pinned to the turmeric-spices commit the engine's packages were built from:
 - **The pane is 480x270.** Keys and the mouse reach the program once the
   canvas has focus (a click on it). On a phone a tap is a click; there is no
   keyboard, so the examples that need keys need one.
-- **The FPS counter** beside the status is the frames the program drew: one
+- **The FPS counter** in the status bar is the frames the program drew: one
   per `end-drawing`, counted where raylib swaps the buffer, twice a second.
   It shows only while something is being drawn.
 - **Links.** `?example=pong` opens on an example, `?example=pong&run` runs

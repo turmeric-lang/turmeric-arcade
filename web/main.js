@@ -14,6 +14,7 @@ import { sharedProgram, followEditor, shareLink, linkedExample, exampleUrl } fro
 let editor = null;
 const textarea = document.getElementById('editor');
 const runBtn = document.getElementById('run-btn');
+const runAgain = document.getElementById('run-again');   // " again", on a wide screen
 const stopBtn = document.getElementById('stop-btn');
 const examples = document.getElementById('examples');
 const status = document.getElementById('status');
@@ -50,7 +51,7 @@ function engineLine(a) {
 }
 
 function setRunning(on) {
-    runBtn.textContent = on ? 'Run again' : 'Run';
+    runAgain.hidden = !on;
     stopBtn.disabled = !on;
     document.body.dataset.run = on ? 'running' : 'idle';
 }
@@ -61,7 +62,7 @@ function stop(quiet) {
     frame = null;
     pending = null;
     if (!quiet) appendLine('-- stopped', 'engine');
-    status.textContent = '';
+    status.textContent = 'ready';
     showFps(null);
     setRunning(false);
 }
@@ -138,6 +139,22 @@ window.addEventListener('message', (e) => {
 });
 
 runBtn.addEventListener('click', () => run());
+
+// The phone's menu (style.css folds Examples, Spices, Share and the theme
+// into it below 800px; wider, the button is hidden and this is inert).  It
+// closes on a second tap, a tap outside the toolbar, Escape, or once an
+// example is picked or a link shared.
+const toolbar = document.querySelector('.toolbar');
+const menuBtn = document.getElementById('menu-btn');
+function setMenu(open) {
+    if (open) toolbar.dataset.menu = 'open'; else delete toolbar.dataset.menu;
+    menuBtn.setAttribute('aria-expanded', String(open));
+}
+menuBtn.addEventListener('click', () => setMenu(toolbar.dataset.menu !== 'open'));
+document.addEventListener('click', (e) => { if (!toolbar.contains(e.target)) setMenu(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+examples.addEventListener('change', () => setMenu(false));
+document.getElementById('share-btn').addEventListener('click', () => setMenu(false));
 stopBtn.addEventListener('click', () => stop());
 
 for (const [key, ex] of Object.entries(EXAMPLES)) {
@@ -202,6 +219,12 @@ async function startEditor() {
         else appendLine(`share link: ${url}`, 'engine');
     });
     editor.onRun(() => run());
+    if (editor.kind === 'monaco') {
+        const pos = document.getElementById('cursor-pos');
+        const show = (p) => { pos.hidden = false; pos.textContent = `Ln ${p.lineNumber}, Col ${p.column}`; };
+        show(editor.editor.getPosition() || { lineNumber: 1, column: 1 });
+        editor.editor.onDidChangeCursorPosition((e) => show(e.position));
+    }
     if (editor.kind === 'monaco') {
         const once = editor.editor.onDidFocusEditorText(() => { once.dispose(); startLsp(); });
     }

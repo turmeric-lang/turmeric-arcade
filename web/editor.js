@@ -75,9 +75,19 @@ export async function createEditor(textarea) {
         detectIndentation: false,
         minimap: { enabled: false },
         fontSize: 13,
+        // The page's face (style.css's @font-face): Iosevka, with its
+        // ligatures (-> => <= ...), which the subset keeps (calt).
+        fontFamily: "'Iosevka', ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
+        fontLigatures: true,
         scrollBeyondLastLine: false,
         bracketPairColorization: { enabled: true },
     });
+    // Monaco measures the font when it is created; if Iosevka arrives after
+    // that (font-display: swap), the cursor and selections would be placed
+    // with the fallback's widths until something remeasures.
+    if (document.fonts && document.fonts.load) {
+        document.fonts.load("13px 'Iosevka'").then(() => monaco.editor.remeasureFonts(), () => {});
+    }
     return {
         kind: 'monaco',
         monaco,

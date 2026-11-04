@@ -114,10 +114,27 @@ test.describe('on a phone', () => {
         expect(ed.height).toBeGreaterThan(200);
         // Nothing runs off the side.
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(vw);
-        // The toolbar's controls are big enough to tap.
-        for (const sel of ['#run-btn', '#stop-btn', '#share-btn', '#spices > summary']) {
+        // The toolbar is one row: the badge and title, Run, Stop, the menu.
+        const row = await Promise.all(['.brand', '#run-btn', '#stop-btn', '#menu-btn'].map(box));
+        for (let i = 1; i < row.length; i++) {
+            expect(row[i].x).toBeGreaterThan(row[i - 1].x);
+            expect(Math.abs((row[i].y + row[i].height / 2) - (row[0].y + row[0].height / 2))).toBeLessThan(4);
+        }
+        for (const b of row.slice(1)) expect(b.height).toBeGreaterThanOrEqual(36);
+        // The rest is in the menu, closed until the hamburger is tapped.
+        await expect(page.locator('#examples')).toBeHidden();
+        await page.locator('#menu-btn').tap();
+        await expect(page.locator('#menu-btn')).toHaveAttribute('aria-expanded', 'true');
+        for (const sel of ['#examples', '#spices > summary', '#share-btn', '#theme-btn']) {
+            await expect(page.locator(sel)).toBeVisible();
             expect((await box(sel)).height).toBeGreaterThanOrEqual(36);
         }
+        // Picking an example closes it.
+        await page.selectOption('#examples', 'pong');
+        await expect(page.locator('#examples')).toBeHidden();
+        // The status bar stays at the foot of the screen.
+        const bar = await box('.statusbar');
+        expect(bar.y + bar.height).toBeLessThanOrEqual(page.viewportSize().height + 1);
     });
 
     test('a tap on the screen reaches the program as a click (Life flips a cell)', async ({ page }) => {

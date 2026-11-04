@@ -85,7 +85,7 @@ pinned to the turmeric-spices commit the engine's packages were built from:
 - **The pane is 480x270.** Keys and the mouse reach the program once the
   canvas has focus (a click on it). On a phone a tap is a click; there is no
   keyboard, so the examples that need keys need one.
-- **The FPS counter** beside the status is the frames the program drew: one
+- **The FPS counter** in the status bar is the frames the program drew: one
   per `end-drawing`, counted where raylib swaps the buffer, twice a second.
   It shows only while something is being drawn.
 - **Links.** `?example=pong` opens on an example, `?example=pong&run` runs
@@ -160,6 +160,7 @@ build).
 ```
 scripts/engine.lock        the turmeric, turmeric-spices and raylib refs and emsdk version the engine is built from
 scripts/fetch-engine.sh    builds the engine into web/public/engine/ (with spices/ and spices.js)
+scripts/subset-iosevka.sh  regenerates web/fonts/ (the C playground's script, this repo's paths)
 examples/                  the Examples menu: one program per file, titled by its ;;; header
 web/index.html, main.js    the page: editor, Run/Stop, Examples, console
 web/editor.js              Monaco (the textarea stays the editor if it fails to load)
@@ -173,6 +174,9 @@ web/lsp-client.js          the Monaco adapter for `tur lsp`, from Try's (its wor
 web/screen.html, screen.js the screen pane's shell, one run per iframe
 web/examples.js            reads examples/ into the menu at build time
 web/public/theme.js        light/dark before first paint (Try Turmeric's switch); the OS's until picked
+web/fonts/                 Iosevka 400/600, subset by scripts/subset-iosevka.sh (from @fontsource/iosevka):
+                           the face of the whole page, editor included
+web/public/favicon.svg     the TA badge (Iosevka's T and A as paths), also the toolbar's logo
 web/csp.js                 the one Content-Security-Policy
 web/worker.js              the Cloudflare Worker in front of the static site
 web/tests/                 Playwright: run, streaming, Stop, stack overflow, refusals,

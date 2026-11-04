@@ -1,3 +1,22 @@
+/* Iosevka, the whole page's face -- the title, the toolbar and the editor --
+   as on the C playground (c.turmeric-lang.com). Subset to what the page can
+   show by scripts/subset-iosevka.sh; Vite fingerprints the files into
+   dist/assets/. swap, not block: a blocking load would leave the page blank
+   for the length of the fetch. */
+@font-face {
+  font-family: 'Iosevka';
+  src: url('./fonts/iosevka-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Iosevka';
+  src: url('./fonts/iosevka-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
   --bg: #15141a;
   --panel: #1e1d25;
@@ -6,8 +25,9 @@
   --dim: #9a97a8;
   --accent: #e6a23c;
   --err: #ff7b72;
-  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --mono: 'Iosevka', ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --ok: #7ee787;
+  --on-accent: #21200f;   /* text on an accent-filled button */
   color-scheme: dark;
 }
 /* public/theme.js sets data-theme before first paint; without it the page is
@@ -21,6 +41,7 @@
   --accent: #a8650f;
   --err: #c62828;
   --ok: #2e7d32;
+  --on-accent: #fffaf0;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -28,7 +49,7 @@ html, body { height: 100%; margin: 0; }
 body {
   background: var(--bg);
   color: var(--fg);
-  font: 14px/1.4 system-ui, sans-serif;
+  font: 14px/1.4 var(--mono);
   display: flex;
   flex-direction: column;
 }
@@ -39,30 +60,89 @@ body {
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
 }
-.toolbar h1 { font-size: 15px; margin: 0 8px 0 0; color: var(--accent); }
-.toolbar button {
+/* The badge and the title, as on c.turmeric-lang.com: the row sits on the
+   baseline so the title and its tagline line up; the badge, which has no
+   useful baseline, centres, sized to the title's line box. */
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: 6px; flex: none; white-space: nowrap; }
+.brand .logo { width: 18px; height: 18px; align-self: center; margin-right: -3px; }
+.brand h1 { margin: 0; font-size: 14px; font-weight: 600; }
+.tagline { margin: 0; color: var(--dim); font-size: 12px; }
+
+.btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  height: 30px;
   font: inherit;
-  padding: 4px 12px;
+  padding: 0 10px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 6px;
   background: var(--panel);
   color: var(--fg);
   cursor: pointer;
 }
-.toolbar button:disabled { opacity: .45; cursor: default; }
-#run-btn { border-color: var(--accent); }
-.examples select { font: inherit; margin-left: 4px; background: var(--panel); color: var(--fg); border: 1px solid var(--border); }
-.status { color: var(--dim); margin-left: auto; font-family: var(--mono); font-size: 12px; }
+.btn:hover:not(:disabled) { border-color: var(--dim); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.btn-primary:hover:not(:disabled) { border-color: var(--fg); }
+.btn-icon { width: 30px; padding: 0; justify-content: center; }
+.icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.icon-fill { fill: currentColor; stroke: none; width: 13px; height: 13px; }
+/* The theme button shows where it goes: the sun in dark, the moon in light. */
+.theme-to-dark { display: none; }
+:root[data-theme="light"] .theme-to-light { display: none; }
+:root[data-theme="light"] .theme-to-dark { display: inline; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.examples { display: inline-flex; flex: none; align-items: center; gap: 6px; color: var(--dim); }
+.examples select { max-width: 14em; font: inherit; height: 30px; padding: 0 6px; border-radius: 6px; background: var(--panel); color: var(--fg); border: 1px solid var(--border); }
+/* The status bar: one compact line at the foot of the page (Try Turmeric's
+   shape). The status takes what room is left and shortens rather than
+   wrapping; the analysis state and the cursor sit at the right. */
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 24px;
+  flex: none;
+  padding: 0 12px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--dim);
+  font-size: 11px;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+.statusbar .dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--dim); margin-right: -6px; }
+body[data-run="running"] .statusbar .dot { background: var(--ok); }
+.status { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.fps, .lsp-status, .cursor-pos { flex: none; }
+.lsp-status { margin-left: auto; }
+.lsp-status[hidden], .cursor-pos[hidden], .fps[hidden] { display: none; }
+.lsp-status[hidden] + .cursor-pos { margin-left: auto; }
 .spices { position: relative; }
-.spices > summary { cursor: pointer; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); list-style: none; }
+.spices > summary { list-style: none; }
+.spices[open] > summary { border-color: var(--accent); }
 .spices > summary::-webkit-details-marker { display: none; }
 .spices-panel { position: absolute; z-index: 10; top: calc(100% + 4px); left: 0; width: 340px; padding: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 4px; }
 .spices-help { margin: 0 0 8px; color: var(--dim); font-size: 12px; }
 .spice { display: grid; grid-template-columns: auto auto 1fr; gap: 6px; align-items: baseline; padding: 3px 0; cursor: pointer; }
 .spice-name { font-family: var(--mono); }
 .spice-desc { color: var(--dim); font-size: 12px; }
-.lsp-status { color: var(--dim); font-family: var(--mono); font-size: 12px; }
-.fps { color: var(--ok); font-family: var(--mono); font-size: 12px; }
+.fps { color: var(--ok); }
 .lsp-status[data-state="idle"]::before { content: "\25CF "; color: var(--ok); }
 .lsp-status[data-state="booting"]::before,
 .lsp-status[data-state="analyzing"]::before { content: "\25CF "; color: var(--accent); }
@@ -108,19 +188,61 @@ body {
 }
 .console .err { color: var(--err); }
 .console .engine { color: var(--dim); }
+/* The toolbar's order on a wide screen. #menu (Examples, Spices, Share, the
+   theme) is display: contents here, so its items sit in the toolbar's own
+   row; on a phone it is the hamburger's dropdown instead. */
+.brand { order: 0; }
+#run-btn { order: 1; }
+#stop-btn { order: 2; }
+.examples, .spices { order: 3; }
+.toolbar::after { content: ""; order: 5; flex: 1; }   /* pushes Share and the theme right */
+#share-btn, #theme-btn { order: 8; }
+.menu { display: contents; }
+.menu-btn, .menu-label { display: none; }
+/* Open, the hamburger stays a hamburger and takes the accent's border. */
+.menu-btn[aria-expanded="true"] { border-color: var(--accent); }
+
+/* Where the toolbar is tight, the tagline goes first. */
+@media (max-width: 1100px) {
+  .tagline { display: none; }
+}
+
 /* A phone or a narrow window (raylib-web-playground-plan P4): one column,
    the screen first and as wide as the page, the editor under it, the console
    last; the page scrolls instead of squeezing three panes into one screen.
-   The toolbar wraps, its controls big enough to tap. */
+   The toolbar is one row -- the badge and title, then Run, Stop and the
+   menu -- with the status on a slim line under it when there is one, and
+   its controls big enough to tap. */
 @media (max-width: 800px) {
   html, body { height: auto; }
   body { min-height: 100%; }
-  .toolbar { flex-wrap: wrap; gap: 6px 8px; padding: 6px 10px; }
-  .toolbar h1 { flex-basis: 100%; margin: 0; }
-  .toolbar button, .spices > summary { min-height: 36px; padding: 6px 12px; }
-  .examples select { min-height: 36px; max-width: 60vw; }
-  .status { margin-left: 0; flex-basis: 100%; order: 10; }
-  .spices-panel { position: fixed; left: 10px; right: 10px; top: auto; width: auto; }
+  .toolbar { position: relative; flex-wrap: wrap; gap: 6px 8px; padding: 6px 10px; }
+  .brand { flex: 1 1 auto; min-width: 0; margin: 0; }
+  .brand h1 { overflow: hidden; text-overflow: ellipsis; }
+  .tagline { display: none; }
+  .btn, .examples select { height: 36px; }
+  .btn-icon { width: 36px; }
+  .run-again { display: none; }
+  .menu-btn { display: inline-flex; order: 3; }
+  .toolbar { flex-wrap: nowrap; }
+  .toolbar::after { display: none; }
+  /* The page scrolls on a phone; the status bar stays at the foot of the
+     screen, where the frame rate can be read while a program runs. */
+  .statusbar { position: sticky; bottom: 0; z-index: 5; }
+  /* The menu: a panel under the toolbar, its items full width and labelled. */
+  .menu { display: none; }
+  .toolbar[data-menu="open"] .menu {
+    display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+    position: absolute; top: calc(100% + 4px); right: 8px; z-index: 20;
+    width: min(320px, calc(100vw - 16px)); padding: 10px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+  }
+  .menu .examples { width: 100%; }
+  .menu .examples select { flex: 1; max-width: none; }
+  .menu .btn, .menu .spices > summary { width: 100%; justify-content: flex-start; padding: 0 10px; }
+  .menu-label { display: inline; }
+  .spices-panel { position: static; width: auto; margin-top: 8px; }
   .panes { display: flex; flex-direction: column; }
   .right { display: contents; }
   .screen-host { order: 1; width: 100%; max-height: none; }

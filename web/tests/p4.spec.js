@@ -102,18 +102,31 @@ const { defaultBrowserType: _browser, ...PHONE } = devices['Pixel 7'];
 test.describe('on a phone', () => {
     test.use(PHONE);
 
-    test('one column: the screen first and full width, the editor, then the console', async ({ page }) => {
+    test('two views, Code and Run, and the page does not scroll', async ({ page }) => {
         await open(page);
         const box = async (sel) => page.locator(sel).boundingBox();
-        const [screen, ed, con] = [await box('#screen-host'), await box('.editor-pane'), await box('#console')];
-        const vw = page.viewportSize().width;
-        expect(screen.y).toBeLessThan(ed.y);
-        expect(ed.y).toBeLessThan(con.y);
+        const vw = page.viewportSize().width, vh = page.viewportSize().height;
+        // Code: the editor, as tall as the space allows; the screen is not shown.
+        await expect(page.locator('#tab-code')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.locator('.editor-pane')).toBeVisible();
+        await expect(page.locator('#screen-host')).toBeHidden();
+        expect((await box('.editor-pane')).height).toBeGreaterThan(vh * 0.6);
+        // Run: the screen as wide as the page over the console; the editor is not shown.
+        await page.locator('#tab-run').tap();
+        await expect(page.locator('.editor-pane')).toBeHidden();
+        const [screen, con] = [await box('#screen-host'), await box('#console')];
         expect(Math.abs(screen.width - vw)).toBeLessThan(2);
         expect(Math.abs(screen.width / screen.height - 16 / 9)).toBeLessThan(0.05);
-        expect(ed.height).toBeGreaterThan(200);
-        // Nothing runs off the side.
-        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(vw);
+        expect(con.y).toBeGreaterThanOrEqual(screen.y + screen.height - 1);
+        expect(con.height).toBeGreaterThan(200);
+        // The page fits the screen: nothing to scroll, either way.
+        for (const view of ['code', 'run']) {
+            await page.locator(`#tab-${view}`).tap();
+            const [sw, sh] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.scrollHeight]);
+            expect(sw).toBeLessThanOrEqual(vw);
+            expect(sh).toBeLessThanOrEqual(vh);
+        }
+        await page.locator('#tab-code').tap();
         // The toolbar is one row: the badge and title, Run, Stop, the menu.
         const row = await Promise.all(['.brand', '#run-btn', '#stop-btn', '#menu-btn'].map(box));
         for (let i = 1; i < row.length; i++) {
@@ -137,6 +150,17 @@ test.describe('on a phone', () => {
         expect(bar.y + bar.height).toBeLessThanOrEqual(page.viewportSize().height + 1);
     });
 
+    test('Run shows the Run view; output while Code shows puts a dot on its tab', async ({ page }) => {
+        test.skip(!HAVE_ENGINE && !process.env.CI, 'web/public/engine is not built');
+        await open(page);
+        await page.locator('#run-btn').tap();
+        await expect(page.locator('#tab-run')).toHaveAttribute('aria-selected', 'true');
+        await page.locator('#tab-code').tap();
+        await expect(page.locator('#tab-run .tab-dot')).toBeVisible({ timeout: 60_000 });
+        await page.locator('#tab-run').tap();
+        await expect(page.locator('#tab-run .tab-dot')).toBeHidden();
+    });
+
     test('a tap on the screen reaches the program as a click (Life flips a cell)', async ({ page }) => {
         test.skip(!HAVE_ENGINE && !process.env.CI, 'web/public/engine is not built');
         // Keep the drawing buffer, so a cell can be read back (raylib.spec.js).
@@ -149,6 +173,8 @@ test.describe('on a phone', () => {
             };
         });
         await open(page, '/?example=life&run');
+        // Running shows the Run view.
+        await expect(page.locator('#tab-run')).toHaveAttribute('aria-selected', 'true');
         await expect(page.locator('#console')).toContainText('generation 0: 708', { timeout: 60_000 });
         const canvas = page.frameLocator('#screen-host iframe').locator('#canvas');
         // Pause (Space is a key, so a tap cannot send it: focus and press),

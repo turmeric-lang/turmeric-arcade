@@ -35,7 +35,22 @@ let frame = null;       // the current run's iframe, or null
 let pending = null;     // the program the next 'screen-ready' runs
 let lastBoot = null;    // the last run's 'boot' message (tests read it)
 
+// The phone's two views (index.html's tabs; style.css shows one at a time
+// below 800px, and both, with the tabs hidden, above it).
+const tabDot = document.querySelector('#tab-run .tab-dot');
+function setView(view) {
+    document.body.dataset.view = view;
+    for (const t of document.querySelectorAll('.view-tabs [role="tab"]')) {
+        t.setAttribute('aria-selected', String(t.dataset.view === view));
+    }
+    if (view === 'run') tabDot.hidden = true;
+}
+for (const t of document.querySelectorAll('.view-tabs [role="tab"]')) {
+    t.addEventListener('click', () => setView(t.dataset.view));
+}
+
 function appendLine(text, cls) {
+    if (document.body.dataset.view !== 'run') tabDot.hidden = false;
     const line = document.createElement('div');
     line.className = 'line' + (cls ? ' ' + cls : '');
     line.textContent = text;
@@ -84,6 +99,7 @@ if (!HAS_JSPI) {
 
 function run(src) {
     if (src !== undefined && editor) editor.setValue(src);
+    setView('run');   // on a phone, show what Run does (or why it cannot)
     if (!HAS_JSPI) {
         appendLine(`Error: ${NO_JSPI_REASON}`, 'err');
         return;
@@ -280,6 +296,7 @@ async function startEditor() {
         getSource: () => editor.getValue(),
         get editorKind() { return editor.kind; },
         clearConsole: () => { consoleEl.replaceChildren(); },
+        setView,
         get lastBoot() { return lastBoot; },
         get lastFps() { return lastFps; },
         saveNow: () => { clearTimeout(saveTimer); saveProgram(); },

@@ -26,7 +26,7 @@
   <meta name="description" content="Make games using raylib and other libraries, and have them JIT-compiled in your browser.">
   <link rel="stylesheet" href="/style.css">
 </head>
-<body>
+<body data-view="code">
   <!-- The toolbar's icons: Lucide (https://lucide.dev, ISC licence), bare
        geometry here so style.css colours them (.icon strokes, .icon-fill
        fills). Referenced with <use href="#i-...">. -->
@@ -38,6 +38,8 @@
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
     <symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/></symbol>
     <symbol id="i-menu" viewBox="0 0 24 24"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol>
     <symbol id="i-gamepad" viewBox="0 0 24 24"><line x1="6" x2="10" y1="11" y2="11"/><line x1="8" x2="8" y1="9" y2="13"/><line x1="15" x2="15.01" y1="12" y2="12"/><line x1="18" x2="18.01" y1="10" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/></symbol>
   </svg>
   <header class="toolbar">
@@ -71,6 +73,14 @@
       <button id="theme-btn" class="btn btn-icon" type="button" data-theme-toggle aria-label="Switch theme"><svg class="icon theme-to-light" aria-hidden="true"><use href="#i-sun"/></svg><svg class="icon theme-to-dark" aria-hidden="true"><use href="#i-moon"/></svg><span class="label menu-label">Theme</span></button>
     </div>
   </header>
+  <!-- On a phone, the page is two views rather than three panes stacked to
+       scroll through: Code (the editor) and Run (the screen over the
+       console). Run switches to Run; a dot on it says the program printed
+       while Code was showing. Hidden on a wider screen, where both show. -->
+  <nav class="view-tabs" role="tablist" aria-label="View">
+    <button type="button" role="tab" id="tab-code" data-view="code" aria-controls="editor-pane" aria-selected="true"><svg class="icon" aria-hidden="true"><use href="#i-code"/></svg>Code</button>
+    <button type="button" role="tab" id="tab-run" data-view="run" aria-controls="right" aria-selected="false"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg>Run<span class="tab-dot" hidden></span></button>
+  </nav>
   <div id="no-jspi" class="no-jspi" role="alert" hidden>
     Turmeric Arcade runs programs on an engine that needs JavaScript Promise
     Integration (JSPI), which this browser does not have. Chrome and Edge 137

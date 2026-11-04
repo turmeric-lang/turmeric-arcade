@@ -62,7 +62,12 @@
     still read, edit and share programs here.
   </div>
   <main class="panes">
-    <section class="editor-pane">
+    <!-- data-editor="loading" until editor.js has Monaco on screen (or has
+         settled on the textarea): the program's raw text is not shown in a
+         plain box first. style.css reveals the textarea after a while if no
+         script ever runs. -->
+    <section class="editor-pane" id="editor-pane" data-editor="loading">
+      <div class="editor-loading" role="status"><span class="spinner" aria-hidden="true"></span>loading the editor&hellip;</div>
       <textarea id="editor" spellcheck="false" aria-label="program"></textarea>
     </section>
     <section class="right">

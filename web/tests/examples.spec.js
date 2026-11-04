@@ -1,14 +1,14 @@
 // The section 8 examples (raylib-web-playground-plan P3), each run from its
 // own file in examples/ as the Examples menu offers it, and checked for what
 // it is there to show: the ball moves, Space serves, Life's counts match a
-// native run's.
+// native run's, raygui's panel and picker draw, the ECS world fills the pane.
 //
 // Each was also run natively, from the same file, with
 // `tur --enable=script-deps run` (the header names its spices); the counts
 // Life prints below are the native run's.
 //
-// Needs an engine with raylib in it: web/public/engine as
-// scripts/fetch-engine.sh builds it.  Locally an engine
+// Needs an engine with raylib, raygui, ecs and ecs-raylib in it:
+// web/public/engine as scripts/fetch-engine.sh builds it.  Locally an engine
 // without them skips; in CI it fails.
 import { test, expect } from '@playwright/test';
 import { existsSync, readFileSync } from 'node:fs';
@@ -136,5 +136,31 @@ test("life: the page's live counts are a native run's", async ({ page }) => {
     await expect(consoleEl(page)).toContainText('generation 120: 151', { timeout: 60_000 });
     console.log(`life: 60 generations of 64x36 took ${Date.now() - t0} ms on the page`);
     expect((await find(page, [30, 120, 80])).n).toBeGreaterThan(100);
+    await noErrors(page);
+});
+
+test("raygui-tuner: raygui's panel and colour picker draw beside the ball", async ({ page }) => {
+    await runExample(page, '11-raygui-tuner', ['math', 'raylib', 'raygui']);
+    await expect.poll(async () => (await find(page, ORANGE, 6)).n, { timeout: 15_000 }).toBeGreaterThan(200);
+    // The panel (230,230,235) on the left, and raygui's own drawing in it:
+    // the picker's hue bar has a pure red top and a pure blue band.
+    const panel = await find(page, [230, 230, 235], 2);
+    expect(panel.n).toBeGreaterThan(5000);
+    expect(panel.x).toBeLessThan(140);
+    expect((await find(page, [255, 0, 0], 30)).n).toBeGreaterThan(5);
+    expect((await find(page, [0, 0, 255], 40)).n).toBeGreaterThan(5);
+    // The ball stays in the court.
+    expect((await find(page, ORANGE, 6)).x).toBeGreaterThan(140);
+    await noErrors(page);
+});
+
+test('ecs-circles: 200 entities drawn by the macro-written systems, and they move', async ({ page }) => {
+    await runExample(page, '12-ecs-circles', ['math', 'raylib', 'ecs', 'ecs-raylib']);
+    const BLUE = [0, 121, 241];
+    await expect.poll(async () => (await find(page, BLUE, 6)).n, { timeout: 30_000 }).toBeGreaterThan(500);
+    const a = await find(page, BLUE, 6);
+    await page.waitForTimeout(500);
+    const b = await find(page, BLUE, 6);
+    expect(Math.abs(b.x - a.x) + Math.abs(b.y - a.y)).toBeGreaterThan(0.5);
     await noErrors(page);
 });

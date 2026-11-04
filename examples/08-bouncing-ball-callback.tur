@@ -10,7 +10,7 @@
 ;;; Web only: natively run-main-loop has no browser to hand the closure to,
 ;;; so it returns and the program ends. 07-bouncing-ball is the native twin.
 (defscript :spices #map{"raylib" #map{:url "https://github.com/turmeric-lang/turmeric-spices"
-                                      :ref "c5864091a3487d8219761e8f489e97ce6a584a86"
+                                      :ref "be6690dcecfe52b7753147e6e5d1504fc18fa309"
                                       :subdir "spices/raylib"}})
 
 (defmodule bouncing-ball-callback

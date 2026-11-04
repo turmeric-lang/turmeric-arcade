@@ -1,0 +1,113 @@
+;;; ecs-circles -- A third spice: entities and systems
+;;;
+;;; 200 circles in an entity-component world (ecs and ecs-raylib): each is an
+;;; entity with Pos2, Vel2, Radius and Tint components. integrate-2d and
+;;; render-circles are macros that write a system -- a defn over every entity
+;;; that has the components it names -- for this program's world type;
+;;; bounce-walls is one written by hand. with-game-loop is ecs-raylib's
+;;; blocking loop, with dt bound in its body. Space adds 50 more circles.
+;;;
+;;; Runs natively too: tur --enable=script-deps run 12-ecs-circles.tur
+(defscript :spices #map{"raylib"     #map{:url "https://github.com/turmeric-lang/turmeric-spices"
+                                          :ref "be6690dcecfe52b7753147e6e5d1504fc18fa309"
+                                          :subdir "spices/raylib"}
+                        "ecs"        #map{:url "https://github.com/turmeric-lang/turmeric-spices"
+                                          :ref "be6690dcecfe52b7753147e6e5d1504fc18fa309"
+                                          :subdir "spices/ecs"}
+                        "ecs-raylib" #map{:url "https://github.com/turmeric-lang/turmeric-spices"
+                                          :ref "be6690dcecfe52b7753147e6e5d1504fc18fa309"
+                                          :subdir "spices/ecs-raylib"}})
+
+(defmodule ecs-circles
+  (export)
+  (load "stdlib/math.tur")        ; int->float
+  (load "stdlib/str-build.tur")   ; int->str, str-concat
+  (import ecs/entity            :refer [entity-index])
+  (import ecs/storage           :refer [dense-new dense-set! dense-get])
+  (import ecs/world             :refer [defworld world-alloc-entity!])
+  (import ecs/query             :refer [for-each])
+  (import ecs-raylib/components :refer [Pos2 Vel2 Radius Tint pos2-make pos2-x pos2-y
+                                        pos2-add! vel2-make vel2-x vel2-y
+                                        radius-make radius-value tint-make])
+  (import ecs-raylib/systems    :refer [integrate-2d])
+  (import ecs-raylib/render     :refer [render-circles __raylib-draw-circle])
+  (import ecs-raylib/loop       :refer [with-game-loop])
+  (import raylib/types          :refer [Color])
+  (import raylib/color          :refer [color black])
+  (import raylib/text           :refer [draw-text])
+  (import raylib/shapes         :refer [draw-rectangle])
+  (import raylib/input          :refer [is-key-pressed])
+
+  (def key-space 32)
+
+  ;; The world: one dense store per component.
+  (defworld Scene [Pos2 Vel2 Radius Tint])
+
+  ;; Two systems written by macros, for this world type.
+  (integrate-2d integrate Scene)
+  (render-circles render Scene)
+
+  ;; And one by hand: a circle at an edge, moving into it, turns round.
+  (defn bounce-walls [^borrow w : Scene] : nil
+    (for-each w
+      [Pos2 Vel2 Radius]
+      [e p v r]
+      (let [px (pos2-x (:: p Pos2))
+            py (pos2-y (:: p Pos2))
+            vx (vel2-x (:: v Vel2))
+            vy (vel2-y (:: v Vel2))
+            rv (radius-value (:: r Radius))
+            fx (or (and (< px rv) (< vx 0.0)) (and (> px (- 480.0 rv)) (> vx 0.0)))
+            fy (or (and (< py rv) (< vy 0.0)) (and (> py (- 270.0 rv)) (> vy 0.0)))]
+        (dense-set! (.Vel2 w) e (vel2-make (if fx (- 0.0 vx) vx) (if fy (- 0.0 vy) vy))))))
+
+  ;; The next value of a linear congruential generator, and a float in
+  ;; [lo, hi) drawn from it.
+  (defn lcg [s : int] : int (mod (+ (* s 1103515245) 12345) 2147483648))
+  (defn between [s : int lo : float hi : float] : float
+    (+ lo (* (- hi lo) (/ (int->float (mod (/ s 65536) 10000)) 10000.0))))
+
+  ;; `n` circles at random, in the palette's colours; returns the next seed.
+  (defn spawn! [^borrow w : Scene n : int seed : int palette : (Vec Color)] : int
+    (let [^mut s seed ^mut i 0]
+      (while (< i n)
+        (let [e  (world-alloc-entity! (.gens w))
+              ix (entity-index e)
+              s1 (lcg s) s2 (lcg s1) s3 (lcg s2) s4 (lcg s3) s5 (lcg s4) s6 (lcg s5)
+              r  (between s5 3.0 9.0)]
+          (dense-set! (.Pos2 w) ix (pos2-make (between s1 r (- 480.0 r)) (between s2 r (- 270.0 r))))
+          (dense-set! (.Vel2 w) ix (vel2-make (between s3 -120.0 120.0) (between s4 -120.0 120.0)))
+          (dense-set! (.Radius w) ix (radius-make r))
+          (dense-set! (.Tint w) ix (tint-make (vec-get palette (mod (/ s6 65536) 5))))
+          (set! s s6))
+        (set! i (+ i 1)))
+      s))
+
+  (defn count-line [n : int] : cstr
+    (str-concat (int->str n) " circles   Space: 50 more"))
+
+  (defn main [] : int
+    (let [w       (make-struct Scene (vec-new) (dense-new) (dense-new) (dense-new) (dense-new))
+          palette (vec-new)
+          ink     (black)
+          shade   (color 245 245 245 200)]
+      (vec-push! palette (color 230 41 55 255))
+      (vec-push! palette (color 0 121 241 255))
+      (vec-push! palette (color 0 158 47 255))
+      (vec-push! palette (color 255 161 0 255))
+      (vec-push! palette (color 200 122 255 255))
+      (let [^mut seed (spawn! w 200 2024 palette)
+            ^mut n    200
+            ^mut text (count-line 200)]
+        (with-game-loop w "ecs circles" 480 270 60
+          (do
+            (when (is-key-pressed key-space)
+              (set! seed (spawn! w 50 seed palette))
+              (set! n (+ n 50))
+              (set! text (count-line n)))
+            (integrate w dt)
+            (bounce-walls w)
+            (render w)
+            (draw-rectangle 4 4 150 14 shade)
+            (draw-text text 8 6 10 ink)))))
+    0))

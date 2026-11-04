@@ -5,12 +5,14 @@ language, at **play.turmeric-lang.com**: write a program in the browser and run
 it on the compiler's own engine, with a screen for it to draw on.
 
 > Status: P3. The engine is turmeric's arcade module (its `tur_wasm_arcade`
-> target: the JSPI JIT module with raylib's web archive linked in), built in
+> target: the JSPI JIT module with raylib's web archive and raygui linked in,
+> and the raylib, math, raygui, ecs and ecs-raylib spices as packages), built in
 > CI from the commit `scripts/engine.lock` pins. The page has Monaco with the
 > language server, a Spices menu, share links, light and dark themes, and the
 > screen pane; the Examples menu is the `examples/` tree, including the
-> plan's section 8 set -- a bouncing ball, its frame-callback twin, pong and
-> Life -- each verified natively and in the page (`web/tests/`).
+> plan's section 8 set -- a bouncing ball, its frame-callback twin, pong,
+> Life, a raygui panel and an ECS world -- each verified natively and in the
+> page (`web/tests/`).
 
 The plan is
 [docs/upcoming/raylib-web-playground-plan.md](https://github.com/turmeric-lang/turmeric/blob/main/docs/upcoming/raylib-web-playground-plan.md)
@@ -104,6 +106,14 @@ The examples, in the order the menu lists them after the first six:
 | `08-bouncing-ball-callback.tur` | the same as a frame callback (`with-web-game-loop`); web only |
 | `09-pong.tur` | two paddles, collision, a score centred with `measure-text`, Space to serve |
 | `10-life.tur` | a `vec` double-buffered at frame rate, the mouse through inline C, counts a native run prints too |
+| `11-raygui-tuner.tur` | a second spice: raygui's slider, checkbox and colour picker driving the ball; raygui's C is in the engine |
+| `12-ecs-circles.tur` | a third: 200 entities, systems written by ecs-raylib's macros and one by hand, Space for 50 more |
+
+A spice the engine carries is either all Turmeric (math, ecs, ecs-raylib),
+mounted from its package when a program names it, or has C of its own
+(raylib, raygui), which is linked into the engine; adding one of the latter
+is a turmeric change (`TUR_ARCADE_SPICE_LIST` in its
+`tools/wasm-jit/arcade/build.sh`), not a page change.
 
 ## Building
 

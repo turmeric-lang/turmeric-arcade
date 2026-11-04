@@ -1,0 +1,96 @@
+;;; raygui-tuner -- A second spice: raygui
+;;;
+;;; The bouncing ball with a control panel: a slider sets its speed, a
+;;; checkbox turns a trail on, and a colour picker paints it. raygui is a
+;;; second spice beside raylib -- both are in the header, and raygui's C is
+;;; built into the engine -- and its Rect is a record passed by value to
+;;; raygui's C. The panel is on the left, the ball's court on the right.
+;;;
+;;; Runs natively too: tur --enable=script-deps run 11-raygui-tuner.tur
+(defscript :spices #map{"raylib" #map{:url "https://github.com/turmeric-lang/turmeric-spices"
+                                      :ref "be6690dcecfe52b7753147e6e5d1504fc18fa309"
+                                      :subdir "spices/raylib"}
+                        "raygui" #map{:url "https://github.com/turmeric-lang/turmeric-spices"
+                                      :ref "be6690dcecfe52b7753147e6e5d1504fc18fa309"
+                                      :subdir "spices/raygui"}})
+
+(defmodule raygui-tuner
+  (export)
+  (load "stdlib/math.tur")   ; float->int, int->float
+  (import raylib/core     :refer [init-window window-should-close begin-drawing
+                                  end-drawing clear-background set-target-fps
+                                  get-frame-time])
+  (import raylib/shapes   :refer [draw-circle draw-rectangle draw-line])
+  (import raylib/color    :refer [color fade raywhite])
+  (import raylib/types    :refer [Color])
+  (import raygui/core     :refer [gui-load-style-default])
+  (import raygui/controls :refer [gui-label gui-slider gui-check-box gui-color-picker])
+  (import raygui/rect     :refer [rect])
+
+  (def radius 10.0)
+  (def court-left 150.0)                    ; the panel is 0..140
+  (def trail-len 12)
+
+  ;; raygui's colour picker speaks 0xRRGGBBAA; raylib wants a Color.
+  (defn packed->color [c : int] : Color
+    (color (mod (/ c 16777216) 256) (mod (/ c 65536) 256) (mod (/ c 256) 256) (mod c 256)))
+
+  (defn main [] : int
+    (init-window 480 270 "raygui tuner")
+    (set-target-fps 60)
+    (gui-load-style-default)
+    (let [bg          (raywhite)
+          panel       (color 230 230 235 255)
+          edge        (color 200 200 205 255)
+          trail-x     (vec-new)              ; the last positions, as ints
+          trail-y     (vec-new)
+          ^mut i      0]
+      (while (< i trail-len)
+        (vec-push! trail-x 0)
+        (vec-push! trail-y 0)
+        (set! i (+ i 1)))
+      (let [^mut x      300.5
+            ^mut y      120.5
+            ^mut dx     0.8                  ; the direction; speed scales it
+            ^mut dy     0.6
+            ^mut speed  200.0
+            ^mut trails 1
+            ^mut tint   4288741631           ; 0xFFA100FF, raylib's orange
+            ^mut ball   (packed->color 4288741631)
+            ^mut ghost  (fade (packed->color 4288741631) 0.25)
+            ^mut head   0]
+        (while (not (window-should-close))
+          (let [dt (get-frame-time)]
+            (set! x (+ x (* dx (* speed dt))))
+            (set! y (+ y (* dy (* speed dt))))
+            (when (or (and (< x (+ court-left radius)) (< dx 0.0))
+                      (and (> x (- 480.0 radius)) (> dx 0.0)))
+              (set! dx (- 0.0 dx)))
+            (when (or (and (< y radius) (< dy 0.0)) (and (> y (- 270.0 radius)) (> dy 0.0)))
+              (set! dy (- 0.0 dy)))
+            (vec-set! trail-x head (float->int x))
+            (vec-set! trail-y head (float->int y))
+            (set! head (mod (+ head 1) trail-len))
+            (begin-drawing)
+            (clear-background bg)
+            (draw-rectangle 0 0 140 270 panel)
+            (draw-line 140 0 140 270 edge)
+            (gui-label (rect 10.0 8.0 120.0 16.0) "speed")
+            (set! speed (gui-slider (rect 10.0 26.0 96.0 16.0) "" "" speed 0.0 400.0))
+            (set! trails (gui-check-box (rect 10.0 54.0 16.0 16.0) "trail" trails))
+            (gui-label (rect 10.0 80.0 120.0 16.0) "colour")
+            (let [picked (gui-color-picker (rect 10.0 98.0 96.0 96.0) "" tint)]
+              ;; A new Color only when the colour changes: raylib's colours
+              ;; are heap handles.
+              (when (not (= picked tint))
+                (set! tint picked)
+                (set! ball (packed->color picked))
+                (set! ghost (fade ball 0.25))))
+            (when (= trails 1)
+              (let [^mut k 0]
+                (while (< k trail-len)
+                  (draw-circle (vec-get trail-x k) (vec-get trail-y k) radius ghost)
+                  (set! k (+ k 1)))))
+            (draw-circle (float->int x) (float->int y) radius ball)
+            (end-drawing)))))
+    0))

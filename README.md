@@ -94,6 +94,10 @@ pinned to the turmeric-spices commit the engine's packages were built from:
 - **The dividers** between the editor and the screen, and the screen and the
   console, drag (or take the arrow keys when focused; double-click resets),
   and are remembered. F12 goes to a definition, as Cmd/Ctrl+click does.
+- **Install it.** The site is a web app (Install in Chrome's address bar, Add
+  to Home Screen on a phone). Once a game has run, the page works offline:
+  the shell is cached when the site is installed, the engine when it is first
+  used. A new version is offered in the status bar, never forced.
 - **Links.** `?example=pong` opens on an example, `?example=pong&run` runs
   it too; Share gives that short link while the example is unedited and a
   `#code=` link once it is changed (which then wins over `?example=`).
@@ -203,6 +207,9 @@ web/fonts/                 Iosevka 400/600, subset by scripts/subset-iosevka.sh 
                            the face of the whole page, editor included
 web/public/favicon.svg     the TA badge (Iosevka's T and A as paths), also the toolbar's logo
 web/storage.js, split.js   localStorage that cannot break the page, and the dividers (both after the C playground's)
+web/public/og-image.png    the card a shared link shows; web/public/icons/ the app icons -- both rendered by
+                           scripts/images/make-images.mjs (og.html, after turmeric-lang.com's card, and the badge)
+scripts/check-pwa.mjs      after a build: what the service worker precaches, and the manifest (CI runs it)
 web/csp.js                 the one Content-Security-Policy
 web/worker.js              the Cloudflare Worker in front of the static site
 web/tests/                 Playwright: run, streaming, Stop, stack overflow, refusals,

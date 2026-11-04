@@ -130,6 +130,7 @@ body {
 body[data-run="running"] .statusbar .dot { background: var(--ok); }
 .status { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .fps, .lsp-status, .cursor-pos { flex: none; }
+.status-action { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
 .lsp-status { margin-left: auto; }
 .lsp-status[hidden], .cursor-pos[hidden], .fps[hidden] { display: none; }
 .lsp-status[hidden] + .cursor-pos { margin-left: auto; }

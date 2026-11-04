@@ -11,6 +11,7 @@ import { initSpicesMenu } from './spices-menu.js';
 import { sharedProgram, followEditor, shareLink, linkedExample, exampleUrl } from './share.js';
 import { read as readStored, write as writeStored } from './storage.js';
 import { initSplit } from './split.js';
+import { registerSW } from 'virtual:pwa-register';
 
 // The textarea until Monaco has loaded (editor.js), then Monaco.
 let editor = null;
@@ -296,3 +297,19 @@ async function startEditor() {
     if (linked && linked.run && !shared && EXAMPLES[linked.name]) run();
 }
 startEditor();
+
+// The service worker (vite.config.js pwa()): in a build only. A new version
+// waits until the visitor says so -- the status bar offers it -- rather than
+// reloading the page and the program in it.
+const updateSW = registerSW({
+    onNeedRefresh() {
+        status.textContent = '';
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'status-action';
+        b.textContent = 'a new version is ready: reload';
+        b.addEventListener('click', () => updateSW(true));
+        status.appendChild(b);
+    },
+    onOfflineReady() { status.textContent = 'ready to work offline'; },
+});

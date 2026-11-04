@@ -135,14 +135,41 @@ async function createEditorIn(textarea) {
         tabSize: 2,
         insertSpaces: true,
         detectIndentation: false,
+        // Try Turmeric's editor options (its main.js), less the minimap
+        // (raylib-web-playground-plan's editor phase has it next) and the
+        // tabs and REPL it serves.
         minimap: { enabled: false },
+        wordWrap: 'on',
+        folding: true,
+        showFoldingControls: 'mouseover',
+        lineDecorationsWidth: 10,
+        autoClosingBrackets: 'beforeWhitespace',
+        autoClosingQuotes: 'beforeWhitespace',
+        autoSurround: 'never',
+        guides: { bracketPairs: true, bracketPairsHorizontal: 'active', highlightActiveBracketPair: true },
+        find: { seedSearchStringFromSelection: 'always' },
+        occurrencesHighlight: 'singleFile',
+        selectionHighlight: true,
+        // Three lanes put the language server's errors and warnings as ticks
+        // in the right-hand strip, findable without scrolling.
+        overviewRulerLanes: 3,
+        overviewRulerBorder: false,
+        quickSuggestions: { other: true, comments: false, strings: false },
+        scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
+        smoothScrolling: true,
+        multiCursorModifier: 'ctrlCmd',
         fontSize: 13,
         // The page's face (style.css's @font-face): Iosevka, with its
         // ligatures (-> => <= ...), which the subset keeps (calt).
         fontFamily: "'Iosevka', ui-monospace, 'SF Mono', Menlo, Consolas, monospace",
         fontLigatures: true,
         scrollBeyondLastLine: false,
-        bracketPairColorization: { enabled: true },
+        bracketPairColorization: { enabled: true, independentColorPoolPerBracketType: false },
+    });
+    // F12: go to definition (the language server's). Cmd/Ctrl+click already
+    // does it; Monaco on its own does not bind the key people reach for.
+    editor.addCommand(monaco.KeyCode.F12, () => {
+        try { editor.getAction('editor.action.revealDefinition')?.run(); } catch (_) { /* no provider yet */ }
     });
     // Monaco measures the font when it is created; if Iosevka arrives after
     // that (font-display: swap), the cursor and selections would be placed

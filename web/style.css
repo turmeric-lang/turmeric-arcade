@@ -147,13 +147,25 @@ body[data-run="running"] .statusbar .dot { background: var(--ok); }
 .lsp-status[data-state="booting"]::before,
 .lsp-status[data-state="analyzing"]::before { content: "\25CF "; color: var(--accent); }
 .no-jspi { padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--panel); color: var(--err); }
+/* The editor | the screen and console, at the fraction split.js stores
+   (--split-h), with the divider between them. */
 .panes {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: calc(var(--split-h, .5) * 100%) 6px 1fr;
   min-height: 0;
 }
-.editor-pane { position: relative; display: flex; border-right: 1px solid var(--border); }
+.editor-pane { position: relative; display: flex; min-width: 0; }
+/* A divider: a 1 px rule in a 6 px grab area, the accent while it is held,
+   hovered or focused. */
+.split-handle { flex: none; background: linear-gradient(var(--border), var(--border)) center / 1px 100% no-repeat; touch-action: none; }
+.split-x { cursor: col-resize; }
+.split-y { height: 6px; cursor: row-resize; background-size: 100% 1px; }
+.split-handle:hover, .split-handle:focus-visible, body.is-splitting .split-handle:active {
+  background-image: linear-gradient(var(--accent), var(--accent)); outline: none;
+}
+body.is-splitting { user-select: none; }
+body.is-splitting iframe { pointer-events: none; }   /* the screen must not take the drag */
 /* Until the editor is ready: a spinner, not the program's raw text in a plain
    box. If no script runs at all, the textarea shows after 10 s anyway. */
 .editor-loading { display: none; }
@@ -185,15 +197,16 @@ body[data-run="running"] .statusbar .dot { background: var(--ok); }
   outline: none;
   tab-size: 2;
 }
-.right { display: flex; flex-direction: column; min-height: 0; }
+.right { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+/* The screen takes --split-v of the column (split.js); the program's canvas
+   keeps its own shape inside it, letterboxed on black. */
 .screen-host {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 16 / 9;
-  max-height: 55%;
+  height: calc(var(--split-v, .55) * 100%);
   background: #000;
-  border-bottom: 1px solid var(--border);
 }
 .screen-host iframe { width: 100%; height: 100%; border: 0; }
 .console {
@@ -263,7 +276,8 @@ body[data-run="running"] .statusbar .dot { background: var(--ok); }
   .spices-panel { position: static; width: auto; margin-top: 8px; }
   .panes { display: flex; flex-direction: column; }
   .right { display: contents; }
-  .screen-host { order: 1; width: 100%; max-height: none; }
+  .split-handle { display: none; }
+  .screen-host { order: 1; width: 100%; height: auto; aspect-ratio: 16 / 9; border-bottom: 1px solid var(--border); }
   .editor-pane { order: 2; height: 60vh; border-right: 0; border-bottom: 1px solid var(--border); }
   .console { order: 3; flex: none; min-height: 8em; max-height: 40vh; }
 }

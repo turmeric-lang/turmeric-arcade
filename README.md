@@ -152,8 +152,8 @@ SDK's own layout.
 git clone https://github.com/turmeric-lang/turmeric ../turmeric   # once; a bare repo works too
 just checkout-turmeric    # turmeric at engine.lock's commit (a worktree in .engine-deps/turmeric if ../turmeric is bare)
 just emsdk                # the pinned Emscripten, into .engine-deps/emsdk
-just engine               # builds web/public/engine/ (first build ~1-2 min); if the
-                          #   checkout went to .engine-deps/turmeric: just engine .engine-deps/turmeric
+just engine               # builds web/public/engine/ (first build ~1-2 min), from the
+                          #   .engine-deps/turmeric checkout if there is one, else ../turmeric
 just install              # the site's npm dependencies
 npx --prefix web playwright install chromium    # once, for the tests
 just dev                  # http://localhost:3100 (never 3000: that is Try Turmeric's)

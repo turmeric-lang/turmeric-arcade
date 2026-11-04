@@ -19,14 +19,19 @@ emsdk:
     ./emsdk install "$EMSDK_VERSION"
     ./emsdk activate "$EMSDK_VERSION"
 
-# Build the engine into web/public/engine/ (uses .engine-deps/emsdk if `just emsdk` ran, else emcc on PATH)
-engine dir=turmeric:
+# Build the engine into web/public/engine/. Uses .engine-deps/emsdk if `just emsdk` ran (else emcc on PATH),
+# and the turmeric checkout `dir`, else .engine-deps/turmeric if there is one, else TURMERIC_DIR
+engine dir="":
     #!/usr/bin/env bash
     set -euo pipefail
     if [ -f .engine-deps/emsdk/emsdk_env.sh ]; then
-        . .engine-deps/emsdk/emsdk_env.sh >/dev/null
+        . .engine-deps/emsdk/emsdk_env.sh >/dev/null 2>&1
     fi
-    bash scripts/fetch-engine.sh {{dir}}
+    dir={{quote(dir)}}
+    if [ -z "$dir" ]; then
+        if [ -d .engine-deps/turmeric ]; then dir=.engine-deps/turmeric; else dir={{turmeric}}; fi
+    fi
+    bash scripts/fetch-engine.sh "$dir"
 
 # Check out the turmeric commit engine.lock pins (a detached worktree under
 # .engine-deps/ when TURMERIC_DIR is a bare repo)

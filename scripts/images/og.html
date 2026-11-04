@@ -1,0 +1,73 @@
+<!doctype html>
+<!-- og.html -- the social card (web/public/og-image.png), 1200x630, after
+     turmeric-lang.com's og-image.png: its ground, type and palette, the
+     arcade's badge, and screens of the examples where Turmeric's has a code
+     card. Rendered by make-images.mjs; ?v=a|b|c picks the right-hand side:
+     a = one screen in a window, b = a code card with a running screen over it
+     (the one published), c = four screens. -->
+<meta charset="utf-8">
+<style>
+@font-face { font-family: 'Iosevka'; src: url(../../web/fonts/iosevka-400.woff2); font-weight: 400; }
+@font-face { font-family: 'Iosevka'; src: url(../../web/fonts/iosevka-600.woff2); font-weight: 600; }
+@font-face { font-family: 'DM Sans'; src: url(../../web/node_modules/@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff2); font-weight: 400; }
+@font-face { font-family: 'DM Sans'; src: url(../../web/node_modules/@fontsource/dm-sans/files/dm-sans-latin-500-normal.woff2); font-weight: 500; }
+@font-face { font-family: 'DM Sans'; src: url(../../web/node_modules/@fontsource/dm-sans/files/dm-sans-latin-400-italic.woff2); font-weight: 400 500; font-style: italic; }
+:root { --bg: #0C0A08; --fg: #EAE0D2; --dim: #9A8F80; --green: #A8C98A; --orange: #EFA030; --teal: #3fb8a6;
+        --card: #13110E; --rule: #2A2620; }
+* { box-sizing: border-box; margin: 0; }
+body { width: 1200px; height: 630px; background: var(--bg); color: var(--fg); position: relative; overflow: hidden; font-family: 'DM Sans', sans-serif; }
+.left { position: absolute; left: 72px; top: 72px; width: 560px; }
+.brand { display: flex; align-items: center; gap: 18px; }
+.brand img { width: 56px; height: 56px; }
+.brand span { font: 600 40px/1 'Iosevka', monospace; letter-spacing: .01em; }
+.brand .t { color: var(--orange); } .brand .a { color: var(--teal); }
+h1 { margin-top: 92px; font: 500 52px/1.12 'DM Sans', sans-serif; letter-spacing: -.01em; }
+h1 em { color: var(--green); font-style: italic; }
+p { margin-top: 26px; font: 400 23px/1.5 'DM Sans', sans-serif; color: var(--dim); max-width: 520px; }
+.url { position: absolute; left: 72px; bottom: 66px; font: 600 25px/1 'Iosevka', monospace; color: var(--orange); }
+.card { position: absolute; background: var(--card); border: 1px solid var(--rule); border-radius: 14px; overflow: hidden;
+        box-shadow: 0 18px 50px rgba(0,0,0,.55); }
+.bar { height: 46px; display: flex; align-items: center; gap: 10px; padding: 0 20px; border-bottom: 1px solid var(--rule);
+       font: 400 15px/1 'Iosevka', monospace; color: var(--dim); }
+.bar .fps { margin-left: auto; color: #7ee787; }
+.bar .dot { width: 8px; height: 8px; border-radius: 50%; background: #7ee787; }
+.screen { display: block; width: 100%; aspect-ratio: 16/9; background: #f5f5f5; object-fit: cover; }
+pre { padding: 22px 26px; font: 400 19px/1.65 'Iosevka', monospace; color: var(--fg); }
+.c { color: #48433D; font-style: italic; } .k { color: #EFA030; } .f { color: #C4A0E8; } .n { color: #A8C98A; }
+.s { color: #D9735A; } .d { color: #5A5448; } .ty { color: #7AC4B8; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid img { width: 100%; aspect-ratio: 16/9; border-radius: 10px; border: 1px solid var(--rule); object-fit: cover; display: block; }
+</style>
+<body>
+<div class="left">
+  <div class="brand"><img src="../../web/public/favicon.svg"><span><span class="t">Turmeric</span> <span class="a">Arcade</span></span></div>
+  <h1>raylib, <em>compiled</em><br>in your <em>browser</em></h1>
+  <p>Write a game in Turmeric and press Run: it is compiled and drawn in the page. The same file runs natively.</p>
+</div>
+<div class="url">https://play.turmeric-lang.com</div>
+<div id="right"></div>
+<script>
+const v = new URLSearchParams(location.search).get('v') || 'b';
+const right = document.getElementById('right');
+const code = `<pre><span class="c">;; the frame loop, as raylib writes it</span>
+<span class="d">(</span><span class="k">while</span> <span class="d">(</span><span class="f">not</span> <span class="d">(</span><span class="f">window-should-close</span><span class="d">))</span>
+  <span class="d">(</span><span class="f">begin-drawing</span><span class="d">)</span>
+  <span class="d">(</span><span class="f">clear-background</span> bg<span class="d">)</span>
+  <span class="d">(</span><span class="f">draw-circle</span> x y <span class="n">12.0</span> ball<span class="d">)</span>
+  <span class="d">(</span><span class="f">draw-text</span> <span class="s">"arrows: push"</span> <span class="n">10 10 14</span> ink<span class="d">)</span>
+  <span class="d">(</span><span class="f">end-drawing</span><span class="d">))</span></pre>`;
+if (v === 'a') {
+  right.innerHTML = `<div class="card" style="left:660px; top:118px; width:468px">
+    <div class="bar"><span class="dot"></span>ecs-circles.tur<span class="fps">60 fps</span></div>
+    <img class="screen" src="shots/shot-ecs-circles.png"></div>`;
+} else if (v === 'b') {
+  right.innerHTML = `<div class="card" style="left:628px; top:96px; width:500px">
+    <div class="bar">bouncing-ball.tur</div>${code}</div>
+    <div class="card" style="left:830px; top:350px; width:330px">
+    <div class="bar" style="height:36px; font-size:13px"><span class="dot"></span>running<span class="fps">60 fps</span></div>
+    <img class="screen" src="shots/shot-pong.png"></div>`;
+} else {
+  right.innerHTML = `<div class="grid" style="position:absolute; left:640px; top:110px; width:490px">
+    <img src="shots/shot-ecs-circles.png"><img src="shots/shot-pong.png"><img src="shots/shot-life.png"><img src="shots/shot-raygui-tuner.png"></div>`;
+}
+</script>

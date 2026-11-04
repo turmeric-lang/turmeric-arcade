@@ -1,6 +1,7 @@
 // Vite configuration for Turmeric Arcade (play.turmeric-lang.com).
 import { defineConfig } from 'vite';
 import { cloudflare } from '@cloudflare/vite-plugin';
+import { VitePWA } from 'vite-plugin-pwa';
 import { resolve } from 'path';
 import { readFileSync, existsSync, writeFileSync } from 'fs';
 import { CONTENT_SECURITY_POLICY } from './csp.js';
@@ -45,6 +46,68 @@ function stampCsp() {
   };
 }
 
+// Installable, and playable offline once played (raylib-web-playground-plan
+// P5), as the C playground does it (turmeric-lang/c2mp vite-wasm):
+//
+// - 'prompt', not 'autoUpdate': a new version never reloads the page under
+//   the visitor; main.js says one is ready in the status bar.
+// - The shell (both pages, their scripts, styles, fonts, icons) is precached:
+//   ~7.5 MB, what a visit downloads anyway, since the whole monaco-editor
+//   package is imported and its language chunks load with it. Monaco's
+//   TypeScript worker (6.9 MB) is the one chunk a visit never fetches -- the
+//   arcade opens no TypeScript -- so it is left out.
+//   The engine is not: web/public/engine is ~12 MB (the module, the stdlib
+//   package, the spices, the language server), which a first visit should not
+//   pay for before the page works. It is cached as it is used, network first:
+//   its files are not content-hashed, so a cache-first copy could pair a new
+//   turmeric-jit.js with an old turmeric-jit.wasm; offline, the cache answers.
+// - Responses keep the headers they were fetched with, so the page and the
+//   screen iframe stay cross-origin isolated (COOP/COEP) when the service
+//   worker serves them, which the engine's threads need.
+// - Registered by main.js (virtual:pwa-register), not an inline script: the
+//   Content-Security-Policy allows none.
+function pwa() {
+  return VitePWA({
+    registerType: 'prompt',
+    injectRegister: false,
+    includeAssets: ['icons/apple-touch-icon.png', 'favicon.svg', 'og-image.png'],
+    workbox: {
+      globPatterns: ['**/*.{html,css,js,woff2,svg}'],
+      globIgnores: ['engine/**', 'assets/ts.worker-*'],
+      // editor.api (Monaco's core) is 2.7 MB, over the default 2 MB limit.
+      maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+      navigateFallback: 'index.html',
+      navigateFallbackDenylist: [/^\/engine\//, /^\/screen\.html/],
+      cleanupOutdatedCaches: true,
+      runtimeCaching: [{
+        urlPattern: ({ url }) => url.pathname.startsWith('/engine/'),
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'arcade-engine',
+          networkTimeoutSeconds: 8,
+          expiration: { maxEntries: 40 },
+        },
+      }],
+    },
+    manifest: {
+      name: 'Turmeric Arcade',
+      short_name: 'Arcade',
+      description: 'raylib, compiled in your browser: write a game in Turmeric and press Run.',
+      start_url: '/',
+      scope: '/',
+      display: 'standalone',
+      background_color: '#15141a',
+      theme_color: '#15141a',
+      categories: ['developer', 'education', 'games'],
+      icons: [
+        { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      ],
+    },
+  });
+}
+
 // The headers the dev and preview servers send on every response.  Production
 // gets the same set from _headers (static assets) and worker.js (the rest).
 const SERVER_HEADERS = {
@@ -81,5 +144,5 @@ export default defineConfig({
   preview: {
     headers: SERVER_HEADERS,
   },
-  plugins: [stampCsp(), cloudflare()],
+  plugins: [stampCsp(), cloudflare(), pwa()],
 });

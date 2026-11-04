@@ -182,6 +182,8 @@ examples/                  the Examples menu: one program per file, titled by it
 web/index.html, main.js    the page: editor, Run/Stop, Examples, console
 web/editor.js              Monaco (the textarea stays the editor if it fails to load)
 web/editor-language.js     the Turmeric tokenizer, from Try Turmeric's web/editor-language.js
+web/editor-palette.json    the Turmeric token colours, a copy of turmeric's web/editor-palette.json
+                           (Try's Monaco themes and the VS Code/Vim/Emacs packs carry the same)
 web/share.js, share-codec.js  share links: #code= (Try Turmeric's format), kept current, Share copies it;
                            ?example=NAME[&run] for an unedited example
 web/spices-menu.js         the Spices menu: ticks declare a spice in the program's defscript header

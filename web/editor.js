@@ -8,25 +8,70 @@
 // start only for those languages, which the arcade never opens.
 
 import { configureTurmeric } from './editor-language.js';
+// The Turmeric token colours, written down once in turmeric's
+// web/editor-palette.json -- Try Turmeric's Monaco themes and the VS Code,
+// Vim and Emacs packs all carry them -- and copied here verbatim.  Update by
+// copying the file again, never by editing the colours in this one.
+import PALETTE from './editor-palette.json';
+
+// The token rules Try Turmeric's editor-theme.js builds from the palette:
+// the same Monarch token names (editor-language.js), the same colours.
+function tokenRules(p) {
+    return [
+        { token: 'comment',          foreground: p.comment, fontStyle: 'italic' },
+        { token: 'string',           foreground: p.string },
+        { token: 'number',           foreground: p.number },
+        { token: 'number.float',     foreground: p.number },
+        { token: 'keyword',          foreground: p.keyword, fontStyle: 'bold' },
+        { token: 'keyword.operator', foreground: p.keywordOperator },
+        { token: 'annotation',       foreground: p.annotation },
+        { token: 'kind',             foreground: p.kind },
+        { token: 'type',             foreground: p.type },
+        { token: 'operator',         foreground: p.operator },
+        { token: 'delimiter',        foreground: p.delimiter },
+        { token: 'identifier',       foreground: p.foreground },
+    ];
+}
+
+// Rainbow brackets, Try Turmeric's two sets (editor-theme.js
+// RAINBOW_BRACKETS, after trowel's turmeric-dark): six depths and an
+// unmatched-bracket red; the light set is darkened to read on the light page.
+const RAINBOW = {
+    dark:  ['#EFA030', '#D7C94A', '#A8C98A', '#7AC4B8', '#8AB0E8', '#C4A0E8', '#FF5C57'],
+    light: ['#B5650A', '#8A7800', '#4E7F24', '#13756A', '#2F62B0', '#7748AE', '#D0312D'],
+};
+function bracketColors(set) {
+    const c = {};
+    set.slice(0, 6).forEach((hex, i) => { c[`editorBracketHighlight.foreground${i + 1}`] = hex; });
+    c['editorBracketHighlight.unexpectedBracket.foreground'] = set[6];
+    return c;
+}
 
 // The page's theme (public/theme.js: light or dark, the OS's until the
-// visitor picks), over Monaco's vs / vs-dark, in the page's colours
-// (style.css).  Monaco takes colours as a JS object, so the theme is rebuilt
-// from the stylesheet on each tur-themechange.
+// visitor picks): Turmeric's token colours and brackets on the page's own
+// canvas (style.css), so the editor sits in the page rather than as a panel
+// of another colour.  Monaco takes colours as a JS object, so the theme is
+// rebuilt from the stylesheet on each tur-themechange.  Monaco reads a colour
+// it cannot parse as opaque red, so only literal hex is taken from CSS.
 const pageTheme = () => (document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
 function defineTheme(monaco) {
     const css = getComputedStyle(document.documentElement);
-    const v = (name, fallback) => (css.getPropertyValue(name).trim() || fallback);
-    const name = `arcade-${pageTheme()}`;
+    const v = (name, fallback) => {
+        const raw = css.getPropertyValue(name).trim();
+        return /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(raw) ? raw : fallback;
+    };
+    const theme = pageTheme();
+    const name = `arcade-${theme}`;
     monaco.editor.defineTheme(name, {
-        base: pageTheme() === 'light' ? 'vs' : 'vs-dark',
+        base: theme === 'light' ? 'vs' : 'vs-dark',
         inherit: true,
-        rules: [],
+        rules: tokenRules(PALETTE[theme]),
         colors: {
             'editor.background': v('--bg', '#15141a'),
-            'editor.foreground': v('--fg', '#e8e6ef'),
+            'editor.foreground': `#${PALETTE[theme].foreground}`,
             'editorLineNumber.foreground': v('--dim', '#9a97a8'),
             'editorCursor.foreground': v('--accent', '#e6a23c'),
+            ...bracketColors(RAINBOW[theme]),
         },
     });
     return name;
@@ -45,7 +90,18 @@ function textareaEditor(textarea) {
     };
 }
 
+// index.html starts the pane in data-editor="loading" (a spinner, the
+// textarea hidden); this ends it, whichever editor the page ends up with.
+function ready() {
+    const pane = document.getElementById('editor-pane');
+    if (pane) pane.dataset.editor = 'ready';
+}
+
 export async function createEditor(textarea) {
+    try { return await createEditorIn(textarea); } finally { ready(); }
+}
+
+async function createEditorIn(textarea) {
     const fallback = textareaEditor(textarea);
     let monaco;
     try {
@@ -57,6 +113,12 @@ export async function createEditor(textarea) {
     } catch (err) {
         console.warn('Monaco did not load; the editor stays a textarea:', err);
         return fallback;
+    }
+    // Lay out in Iosevka from the start, if it comes in time: Monaco measures
+    // the font once, when it is created (remeasured below if it is late).
+    if (document.fonts && document.fonts.load) {
+        await Promise.race([document.fonts.load("13px 'Iosevka'"),
+                            new Promise((r) => setTimeout(r, 1500))]).catch(() => {});
     }
     configureTurmeric(monaco);
     const theme = defineTheme(monaco);

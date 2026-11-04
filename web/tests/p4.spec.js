@@ -154,7 +154,22 @@ test.describe('on a phone', () => {
         // Pause (Space is a key, so a tap cannot send it: focus and press),
         // read a cell, tap it, read it again.
         await canvas.tap({ position: { x: 5, y: 5 } });
-        await page.keyboard.press(' ');
+        // Held for a few frames: raylib samples keys once a frame, and a press
+        // and release inside one slow frame is never seen.
+        await page.keyboard.down(' ');
+        await page.waitForTimeout(150);
+        await page.keyboard.up(' ');
+        // Paused for certain before a cell is read: the banner (grey text on
+        // its own strip at the foot of the grid) is drawn.
+        await expect.poll(() => canvas.evaluate((c) => {
+            const gl = c.getContext('webgl2');
+            const w = 300, h = 12, px = new Uint8Array(w * h * 4);
+            gl.readPixels(20, c.height - 262, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+            let grey = 0;
+            for (let i = 0; i < px.length; i += 4)
+                if (Math.abs(px[i] - 120) < 25 && Math.abs(px[i + 1] - 120) < 25 && Math.abs(px[i + 2] - 120) < 25) grey++;
+            return grey;
+        }), { timeout: 10_000 }).toBeGreaterThan(30);
         const cell = async () => canvas.evaluate((c) => {
             const gl = c.getContext('webgl2');
             const px = new Uint8Array(4);
@@ -166,8 +181,14 @@ test.describe('on a phone', () => {
         await page.waitForTimeout(500);
         const before = await cell();
         const b = await canvas.boundingBox();
-        // The canvas is scaled to the pane: tap where cell (0, 0) is drawn.
-        await page.touchscreen.tap(b.x + (18 / 480) * b.width, b.y + (11 / 270) * b.height);
+        // The canvas is scaled to the pane: touch where cell (0, 0) is drawn,
+        // and hold it for a few frames, as a finger does -- raylib sees a
+        // press only if it spans a frame, and page.touchscreen.tap does not.
+        const cdp = await page.context().newCDPSession(page);
+        const at = { x: b.x + (19 / 480) * b.width, y: b.y + (12 / 270) * b.height };
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [at] });
+        await page.waitForTimeout(150);
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
         await expect.poll(cell, { timeout: 5_000 }).toBe(!before);
     });
 });

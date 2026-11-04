@@ -198,9 +198,9 @@ body[data-run="running"] .statusbar .dot { background: var(--ok); }
 .toolbar::after { content: ""; order: 5; flex: 1; }   /* pushes Share and the theme right */
 #share-btn, #theme-btn { order: 8; }
 .menu { display: contents; }
-.menu-btn, .menu-label, .menu-close { display: none; }
-.menu-btn[aria-expanded="true"] .menu-open { display: none; }
-.menu-btn[aria-expanded="true"] .menu-close { display: inline; }
+.menu-btn, .menu-label { display: none; }
+/* Open, the hamburger stays a hamburger and takes the accent's border. */
+.menu-btn[aria-expanded="true"] { border-color: var(--accent); }
 
 /* Where the toolbar is tight, the tagline goes first. */
 @media (max-width: 1100px) {

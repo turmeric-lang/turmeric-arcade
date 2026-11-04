@@ -14,6 +14,7 @@ import { sharedProgram, followEditor, shareLink, linkedExample, exampleUrl } fro
 let editor = null;
 const textarea = document.getElementById('editor');
 const runBtn = document.getElementById('run-btn');
+const runLabel = document.getElementById('run-label');
 const stopBtn = document.getElementById('stop-btn');
 const examples = document.getElementById('examples');
 const status = document.getElementById('status');
@@ -50,7 +51,7 @@ function engineLine(a) {
 }
 
 function setRunning(on) {
-    runBtn.textContent = on ? 'Run again' : 'Run';
+    runLabel.textContent = on ? 'Run again' : 'Run';
     stopBtn.disabled = !on;
     document.body.dataset.run = on ? 'running' : 'idle';
 }

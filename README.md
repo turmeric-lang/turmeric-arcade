@@ -160,6 +160,7 @@ build).
 ```
 scripts/engine.lock        the turmeric, turmeric-spices and raylib refs and emsdk version the engine is built from
 scripts/fetch-engine.sh    builds the engine into web/public/engine/ (with spices/ and spices.js)
+scripts/subset-iosevka.sh  regenerates web/fonts/ (the C playground's script, this repo's paths)
 examples/                  the Examples menu: one program per file, titled by its ;;; header
 web/index.html, main.js    the page: editor, Run/Stop, Examples, console
 web/editor.js              Monaco (the textarea stays the editor if it fails to load)
@@ -173,6 +174,9 @@ web/lsp-client.js          the Monaco adapter for `tur lsp`, from Try's (its wor
 web/screen.html, screen.js the screen pane's shell, one run per iframe
 web/examples.js            reads examples/ into the menu at build time
 web/public/theme.js        light/dark before first paint (Try Turmeric's switch); the OS's until picked
+web/fonts/                 Iosevka 400/600, subset by scripts/subset-iosevka.sh (from @fontsource/iosevka):
+                           the face of the whole page, editor included
+web/public/favicon.svg     the TA badge (Iosevka's T and A as paths), also the toolbar's logo
 web/csp.js                 the one Content-Security-Policy
 web/worker.js              the Cloudflare Worker in front of the static site
 web/tests/                 Playwright: run, streaming, Stop, stack overflow, refusals,

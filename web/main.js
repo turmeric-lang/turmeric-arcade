@@ -9,6 +9,8 @@ import { createEditor } from './editor.js';
 import { createLspClient } from './lsp-client.js';
 import { initSpicesMenu } from './spices-menu.js';
 import { sharedProgram, followEditor, shareLink, linkedExample, exampleUrl } from './share.js';
+import { read as readStored, write as writeStored } from './storage.js';
+import { initSplit } from './split.js';
 
 // The textarea until Monaco has loaded (editor.js), then Monaco.
 let editor = null;
@@ -169,6 +171,35 @@ const linked = linkedExample();
 if (linked && EXAMPLES[linked.name]) examples.value = linked.name;
 textarea.value = EXAMPLES[examples.value].src;
 
+// The program survives a reload (as on the C playground): kept in
+// localStorage, with the example it started from, as the visitor types.  It
+// opens when the URL names nothing -- a #code= link or a ?example= link wins
+// -- and storage that is blocked or full only means nothing is kept
+// (storage.js).
+const PROGRAM_KEY = 'arcade.program';
+function savedProgram() {
+    try {
+        const p = JSON.parse(readStored(PROGRAM_KEY) || 'null');
+        return p && typeof p.src === 'string' ? p : null;
+    } catch (_) { return null; }
+}
+const saved = linked ? null : savedProgram();
+if (saved) {
+    if (EXAMPLES[saved.example]) examples.value = saved.example;
+    textarea.value = saved.src;
+}
+const saveProgram = () => editor && writeStored(PROGRAM_KEY,
+    JSON.stringify({ src: editor.getValue(), example: examples.value }));
+let saveTimer = null;
+window.addEventListener('pagehide', () => { clearTimeout(saveTimer); saveProgram(); });
+
+// The dividers: the editor | the screen and console, and the screen | the
+// console (split.js; hidden on a phone).
+initSplit(document.querySelector('.panes'), document.getElementById('split-main'),
+          { prop: '--split-h', key: 'arcade.split.h', axis: 'x', initial: 0.5 });
+initSplit(document.getElementById('right'), document.getElementById('split-screen'),
+          { prop: '--split-v', key: 'arcade.split.v', axis: 'y', initial: 0.55 });
+
 // The example the editor holds unedited, or null: that is shared, and kept
 // in the URL, as its ?example= link.
 const pristine = () => (editor && editor.getValue() === EXAMPLES[examples.value].src ? examples.value : null);
@@ -209,6 +240,7 @@ async function startEditor() {
     if (shared) textarea.value = shared;
     editor = await createEditor(textarea);
     followEditor(editor, pristine);
+    editor.onChange(() => { clearTimeout(saveTimer); saveTimer = setTimeout(saveProgram, 300); });
     if (linked && !EXAMPLES[linked.name]) {
         appendLine(`Error: there is no example called "${linked.name}"; the menu lists them`, 'err');
     }
@@ -220,6 +252,13 @@ async function startEditor() {
     });
     editor.onRun(() => run());
     if (editor.kind === 'monaco') {
+        // Ctrl/Cmd+S: the program is kept as it is typed anyway; this keeps
+        // it now, and keeps the browser's own Save Page dialog away.
+        editor.editor.addCommand(editor.monaco.KeyMod.CtrlCmd | editor.monaco.KeyCode.KeyS, () => {
+            clearTimeout(saveTimer);
+            saveProgram();
+            status.textContent = 'saved in this browser';
+        });
         const pos = document.getElementById('cursor-pos');
         const show = (p) => { pos.hidden = false; pos.textContent = `Ln ${p.lineNumber}, Col ${p.column}`; };
         show(editor.editor.getPosition() || { lineNumber: 1, column: 1 });
@@ -242,6 +281,7 @@ async function startEditor() {
         clearConsole: () => { consoleEl.replaceChildren(); },
         get lastBoot() { return lastBoot; },
         get lastFps() { return lastFps; },
+        saveNow: () => { clearTimeout(saveTimer); saveProgram(); },
         // The language server, for specs: start it (as a focus would), and read
         // the markers it set, which live in Monaco, a module import.
         lsp: {

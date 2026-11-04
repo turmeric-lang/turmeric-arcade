@@ -70,8 +70,12 @@
       <div class="editor-loading" role="status"><span class="spinner" aria-hidden="true"></span>loading the editor&hellip;</div>
       <textarea id="editor" spellcheck="false" aria-label="program"></textarea>
     </section>
-    <section class="right">
+    <!-- Draggable dividers (split.js): focus one and the arrow keys move it,
+         double-click puts it back. Hidden on a phone. -->
+    <div class="split-handle split-x" id="split-main" aria-label="Resize the editor and the screen"></div>
+    <section class="right" id="right">
       <div id="screen-host" class="screen-host" aria-label="screen"></div>
+      <div class="split-handle split-y" id="split-screen" aria-label="Resize the screen and the console"></div>
       <pre id="console" class="console" aria-label="console"></pre>
     </section>
   </main>

@@ -88,6 +88,12 @@ pinned to the turmeric-spices commit the engine's packages were built from:
 - **The FPS counter** in the status bar is the frames the program drew: one
   per `end-drawing`, counted where raylib swaps the buffer, twice a second.
   It shows only while something is being drawn.
+- **Your program is kept** in this browser as you type, and comes back after
+  a reload (a `#code=` or `?example=` link wins over it); Ctrl/Cmd+S keeps it
+  at once. Blocked or full storage only means nothing is kept.
+- **The dividers** between the editor and the screen, and the screen and the
+  console, drag (or take the arrow keys when focused; double-click resets),
+  and are remembered. F12 goes to a definition, as Cmd/Ctrl+click does.
 - **Links.** `?example=pong` opens on an example, `?example=pong&run` runs
   it too; Share gives that short link while the example is unedited and a
   `#code=` link once it is changed (which then wins over `?example=`).
@@ -196,6 +202,7 @@ web/public/theme.js        light/dark before first paint (Try Turmeric's switch)
 web/fonts/                 Iosevka 400/600, subset by scripts/subset-iosevka.sh (from @fontsource/iosevka):
                            the face of the whole page, editor included
 web/public/favicon.svg     the TA badge (Iosevka's T and A as paths), also the toolbar's logo
+web/storage.js, split.js   localStorage that cannot break the page, and the dividers (both after the C playground's)
 web/csp.js                 the one Content-Security-Policy
 web/worker.js              the Cloudflare Worker in front of the static site
 web/tests/                 Playwright: run, streaming, Stop, stack overflow, refusals,

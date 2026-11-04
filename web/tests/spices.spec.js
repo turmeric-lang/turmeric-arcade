@@ -10,6 +10,10 @@ test.skip(!HAVE_ENGINE && !process.env.CI, 'web/public/engine has no spice packa
 
 const HELLO = readFileSync(new URL('../../examples/01-hello-raylib.tur', import.meta.url), 'utf8');
 const ENGINE = JSON.parse(readFileSync(new URL('../public/engine/engine.json', import.meta.url), 'utf8'));
+// Every package the engine carries is a checkbox.
+const OFFERED = HAVE_ENGINE
+    ? JSON.parse(readFileSync(new URL('../public/engine/spices/index.json', import.meta.url), 'utf8')).spices
+    : [];
 
 async function open(page) {
     await page.goto('/');
@@ -22,7 +26,7 @@ const source = (page) => page.evaluate(() => window.arcade.getSource());
 
 test('the menu lists the spices the engine offers, with their descriptions', async ({ page }) => {
     await open(page);
-    await expect(page.locator('#spice-list .spice')).toHaveCount(2);
+    await expect(page.locator('#spice-list .spice')).toHaveCount(OFFERED.length);
     await expect(page.locator('#spice-list')).toContainText('raylib');
     await expect(page.locator('#spice-list')).toContainText('Raylib graphics and input bindings');
     await expect(page.locator('#spice-list')).toContainText('math');

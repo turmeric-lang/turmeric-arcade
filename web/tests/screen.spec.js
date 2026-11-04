@@ -112,7 +112,9 @@ test('the Examples menu is the examples/ tree, in file order', async ({ page }) 
     const options = await page.locator('#examples option').allTextContents();
     expect(options).toEqual(['Hello, raylib', 'A frame loop that prints as it runs',
                              'The same loop as a frame callback', 'Hello (no screen)',
-                             'A loop that sleeps between steps', 'Fibonacci']);
+                             'A loop that sleeps between steps', 'Fibonacci',
+                             'Bouncing ball', 'Bouncing ball, as a frame callback', 'Pong',
+                             "Conway's Life"]);
     await page.selectOption('#examples', 'hello');
     await page.click('#run-btn');
     await expect(consoleEl(page)).toContainText('hello, arcade', { timeout: 45_000 });

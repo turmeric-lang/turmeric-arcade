@@ -1,0 +1,59 @@
+;;; bouncing-ball-callback -- Bouncing ball, as a frame callback
+;;;
+;;; The same ball, written the way a shipping web game is: with-web-game-loop
+;;; opens the window and hands the browser one closure, which it calls every
+;;; frame with dt bound. main returns at once (the console says "main loop
+;;; running"); the state lives in globals, because main's own locals are gone
+;;; by the first frame. The macro has the arity of ecs-raylib's
+;;; with-game-loop, so porting a native game is changing one import.
+;;;
+;;; Web only: natively run-main-loop has no browser to hand the closure to,
+;;; so it returns and the program ends. 07-bouncing-ball is the native twin.
+(defscript :spices #map{"raylib" #map{:url "https://github.com/turmeric-lang/turmeric-spices"
+                                      :ref "c5864091a3487d8219761e8f489e97ce6a584a86"
+                                      :subdir "spices/raylib"}})
+
+(defmodule bouncing-ball-callback
+  (export)
+  (load "stdlib/math.tur")   ; float->int
+  (import raylib/core   :refer [init-window begin-drawing end-drawing
+                                clear-background get-frame-time])
+  (import raylib/shapes :refer [draw-circle])
+  (import raylib/text   :refer [draw-text])
+  (import raylib/input  :refer [is-key-down is-key-pressed])
+  (import raylib/color  :refer [raywhite black orange])
+  (import raylib/web    :refer [with-web-game-loop])
+
+  (def key-right 262) (def key-left 263) (def key-down 264) (def key-up 265)
+  (def key-r 82)
+  (def radius 12.0)
+  (def right-wall 468.0) (def bottom-wall 258.0)   ; the size, less the radius
+  (def push 300.0)
+
+  ;; The frame's state, and its colours made once (raylib's colours are heap
+  ;; handles).
+  (def ^mut x  240.5)
+  (def ^mut y  100.5)
+  (def ^mut vx 140.5)
+  (def ^mut vy 90.5)
+  (def ink  (black))
+  (def ball (orange))
+
+  (defn main [] : int
+    (with-web-game-loop 0 "bouncing ball" 480 270 60
+      (do
+        (when (is-key-down key-left)  (set! vx (- vx (* push dt))))
+        (when (is-key-down key-right) (set! vx (+ vx (* push dt))))
+        (when (is-key-down key-up)    (set! vy (- vy (* push dt))))
+        (when (is-key-down key-down)  (set! vy (+ vy (* push dt))))
+        (when (is-key-pressed key-r)
+          (set! x 240.5) (set! y 100.5) (set! vx 140.5) (set! vy 90.5))
+        (set! x (+ x (* vx dt)))
+        (set! y (+ y (* vy dt)))
+        (when (or (and (< x radius) (< vx 0.0)) (and (> x right-wall) (> vx 0.0)))
+          (set! vx (- 0.0 vx)))
+        (when (or (and (< y radius) (< vy 0.0)) (and (> y bottom-wall) (> vy 0.0)))
+          (set! vy (- 0.0 vy)))
+        (draw-circle (float->int x) (float->int y) radius ball)
+        (draw-text "arrows: push   R: reset" 10 10 14 ink)))
+    0))

@@ -8,7 +8,7 @@ import { EXAMPLES } from './examples.js';
 import { createEditor } from './editor.js';
 import { createLspClient } from './lsp-client.js';
 import { initSpicesMenu } from './spices-menu.js';
-import { sharedProgram, followEditor, shareLink } from './share.js';
+import { sharedProgram, followEditor, shareLink, linkedExample, exampleUrl } from './share.js';
 
 // The textarea until Monaco has loaded (editor.js), then Monaco.
 let editor = null;
@@ -19,6 +19,13 @@ const examples = document.getElementById('examples');
 const status = document.getElementById('status');
 const screenHost = document.getElementById('screen-host');
 const consoleEl = document.getElementById('console');
+const fpsEl = document.getElementById('fps');
+let lastFps = null;     // the last 'fps' message (tests read it)
+function showFps(m) {
+    lastFps = m;
+    fpsEl.hidden = !m;
+    fpsEl.textContent = m ? `${m.fps} fps` : '';
+}
 
 let frame = null;       // the current run's iframe, or null
 let pending = null;     // the program the next 'screen-ready' runs
@@ -55,6 +62,7 @@ function stop(quiet) {
     pending = null;
     if (!quiet) appendLine('-- stopped', 'engine');
     status.textContent = '';
+    showFps(null);
     setRunning(false);
 }
 
@@ -78,6 +86,7 @@ function run(src) {
     }
     stop(true);
     lastBoot = null;
+    showFps(null);
     pending = { src: editor.getValue(), args: '' };
     const f = document.createElement('iframe');
     f.setAttribute('sandbox', 'allow-scripts allow-same-origin');
@@ -115,10 +124,13 @@ window.addEventListener('message', (e) => {
         case 'printErr':
             appendLine(m.text, 'err');
             break;
+        case 'fps':
+            showFps(m);
+            break;
         case 'result':
             appendLine(engineLine(m.answer), m.answer.engine === 'error' || m.answer.engine === 'refused' ? 'err' : 'engine');
             status.textContent = m.answer.mainLoop ? 'running' : 'done';
-            if (!m.answer.mainLoop) stopBtn.disabled = true;
+            if (!m.answer.mainLoop) { stopBtn.disabled = true; showFps(null); }
             break;
         default:
             break;
@@ -134,7 +146,15 @@ for (const [key, ex] of Object.entries(EXAMPLES)) {
     opt.textContent = ex.title;
     examples.appendChild(opt);
 }
+// A ?example=NAME link opens on that example (P4), and with &run runs it as
+// soon as the editor is up.  A #code= link wins: it is an edited program.
+const linked = linkedExample();
+if (linked && EXAMPLES[linked.name]) examples.value = linked.name;
 textarea.value = EXAMPLES[examples.value].src;
+
+// The example the editor holds unedited, or null: that is shared, and kept
+// in the URL, as its ?example= link.
+const pristine = () => (editor && editor.getValue() === EXAMPLES[examples.value].src ? examples.value : null);
 
 // The language server: `tur lsp` in the stock module, in the worker that
 // comes with the engine (engine/lsp-worker.js), with every spice the engine
@@ -171,9 +191,12 @@ async function startEditor() {
     const shared = await sharedProgram();
     if (shared) textarea.value = shared;
     editor = await createEditor(textarea);
-    followEditor(editor);
+    followEditor(editor, pristine);
+    if (linked && !EXAMPLES[linked.name]) {
+        appendLine(`Error: there is no example called "${linked.name}"; the menu lists them`, 'err');
+    }
     document.getElementById('share-btn').addEventListener('click', async () => {
-        const { url, copied } = await shareLink(editor);
+        const { url, copied } = await shareLink(editor, pristine);
         if (!url) appendLine('Error: could not make a link to this program', 'err');
         else if (copied) status.textContent = 'link copied';
         else appendLine(`share link: ${url}`, 'engine');
@@ -182,7 +205,10 @@ async function startEditor() {
     if (editor.kind === 'monaco') {
         const once = editor.editor.onDidFocusEditorText(() => { once.dispose(); startLsp(); });
     }
-    examples.addEventListener('change', () => { editor.setValue(EXAMPLES[examples.value].src); });
+    examples.addEventListener('change', () => {
+        editor.setValue(EXAMPLES[examples.value].src);
+        window.history.replaceState(null, '', exampleUrl(examples.value, false));
+    });
     initSpicesMenu(editor, document.getElementById('spice-list'));
     window.arcade = {
         run,
@@ -192,6 +218,7 @@ async function startEditor() {
         get editorKind() { return editor.kind; },
         clearConsole: () => { consoleEl.replaceChildren(); },
         get lastBoot() { return lastBoot; },
+        get lastFps() { return lastFps; },
         // The language server, for specs: start it (as a focus would), and read
         // the markers it set, which live in Monaco, a module import.
         lsp: {
@@ -203,5 +230,6 @@ async function startEditor() {
                 : []),
         },
     };
+    if (linked && linked.run && !shared && EXAMPLES[linked.name]) run();
 }
 startEditor();

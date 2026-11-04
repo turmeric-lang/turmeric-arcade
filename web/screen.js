@@ -19,6 +19,9 @@
 //                                                      writes it
 //   iframe -> page   {type: 'result', answer}          main returned: the
 //                                                      engine line
+//   iframe -> page   {type: 'fps', fps, frames}        twice a second while
+//                                                      the program draws: the
+//                                                      frames it presented
 //
 // The answer is the module's own JSON -- {engine: 'compiled' | 'refused'
 // | 'error', exit, reason, front_ms, compile_ms, run_ms}; 'refused' is a
@@ -84,6 +87,36 @@ function loadScript(src) {
     });
 }
 
+// The FPS counter (raylib-web-playground-plan P4): a frame is one
+// glfwSwapBuffers, which raylib's EndDrawing calls once per frame on the web,
+// in the blocking loop and the frame callback alike.  The engine's import of
+// it is wrapped as the module is instantiated (Emscripten's instantiateWasm
+// hands over the import object), so the count is the program's own frames,
+// not the browser's.  Twice a second the rate goes to the page; nothing is
+// sent while the program draws nothing.
+let frames = 0;
+const FPS_EVERY_MS = 500;
+function startFpsReports() {
+    let last = performance.now(), lastFrames = 0;
+    setInterval(() => {
+        const now = performance.now();
+        const n = frames - lastFrames;
+        if (n > 0) post({ type: 'fps', fps: Math.round((n * 1000) / (now - last)), frames });
+        last = now;
+        lastFrames = frames;
+    }, FPS_EVERY_MS);
+}
+function instantiateWasm(imports, done) {
+    const swap = imports.env && imports.env.glfwSwapBuffers;
+    if (typeof swap === 'function') {
+        imports.env.glfwSwapBuffers = (...a) => { frames++; return swap(...a); };
+    }
+    WebAssembly.instantiateStreaming(fetch(`${ENGINE_DIR}/turmeric-jit.wasm`), imports)
+        .then(({ instance, module }) => done(instance, module))
+        .catch((err) => post({ type: 'printErr', text: `the engine did not instantiate: ${err && err.message || err}` }));
+    return {};   // the exports arrive through done()
+}
+
 let mod = null;
 async function boot(src) {
     const t0 = performance.now();
@@ -95,6 +128,7 @@ async function boot(src) {
     if (typeof factory !== 'function') throw new Error('TurmericJitModule not found');
     const m = await factory({
         canvas,
+        instantiateWasm,
         locateFile: (p) => `${ENGINE_DIR}/${p}`,
         print: (text) => post({ type: 'print', text: String(text) }),
         printErr: (text) => {
@@ -199,6 +233,7 @@ window.addEventListener('message', async (e) => {
         post({ type: 'boot', ok: false, error: String(err && err.message ? err.message : err) });
         return;
     }
+    startFpsReports();
     await run(String(m.src || ''), String(m.args || ''));
 });
 

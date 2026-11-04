@@ -4,7 +4,7 @@ The raylib playground for the [Turmeric](https://github.com/turmeric-lang/turmer
 language, at **play.turmeric-lang.com**: write a program in the browser and run
 it on the compiler's own engine, with a screen for it to draw on.
 
-> Status: P3. The engine is turmeric's arcade module (its `tur_wasm_arcade`
+> Status: P4. The engine is turmeric's arcade module (its `tur_wasm_arcade`
 > target: the JSPI JIT module with raylib's web archive and raygui linked in,
 > and the raylib, math, raygui, ecs and ecs-raylib spices as packages), built in
 > CI from the commit `scripts/engine.lock` pins. The page has Monaco with the
@@ -12,7 +12,8 @@ it on the compiler's own engine, with a screen for it to draw on.
 > screen pane; the Examples menu is the `examples/` tree, including the
 > plan's section 8 set -- a bouncing ball, its frame-callback twin, pong,
 > Life, a raygui panel and an ECS world -- each verified natively and in the
-> page (`web/tests/`).
+> page (`web/tests/`). P4 adds an FPS counter, `?example=` links and a
+> layout for phones.
 
 The plan is
 [docs/upcoming/raylib-web-playground-plan.md](https://github.com/turmeric-lang/turmeric/blob/main/docs/upcoming/raylib-web-playground-plan.md)
@@ -82,7 +83,14 @@ pinned to the turmeric-spices commit the engine's packages were built from:
   `raylib/web` -- hands the browser a closure to call every frame; `main`
   returns at once, so keep the frame's state in globals or the closure.
 - **The pane is 480x270.** Keys and the mouse reach the program once the
-  canvas has focus (a click on it).
+  canvas has focus (a click on it). On a phone a tap is a click; there is no
+  keyboard, so the examples that need keys need one.
+- **The FPS counter** beside the status is the frames the program drew: one
+  per `end-drawing`, counted where raylib swaps the buffer, twice a second.
+  It shows only while something is being drawn.
+- **Links.** `?example=pong` opens on an example, `?example=pong&run` runs
+  it too; Share gives that short link while the example is unedited and a
+  `#code=` link once it is changed (which then wins over `?example=`).
 - **Make raylib's colours once.** `(raywhite)`, `(color r g b a)` and the
   like each allocate a handle; call them before the loop, not in it.
 - **Two engine limits to steer around in a blocking loop** (both are open
@@ -156,7 +164,8 @@ examples/                  the Examples menu: one program per file, titled by it
 web/index.html, main.js    the page: editor, Run/Stop, Examples, console
 web/editor.js              Monaco (the textarea stays the editor if it fails to load)
 web/editor-language.js     the Turmeric tokenizer, from Try Turmeric's web/editor-language.js
-web/share.js, share-codec.js  share links: #code= (Try Turmeric's format), kept current, Share copies it
+web/share.js, share-codec.js  share links: #code= (Try Turmeric's format), kept current, Share copies it;
+                           ?example=NAME[&run] for an unedited example
 web/spices-menu.js         the Spices menu: ticks declare a spice in the program's defscript header
 web/defscript.js           reads and rewrites that header (pinned to the engine's turmeric-spices commit)
 web/lsp-client.js          the Monaco adapter for `tur lsp`, from Try's (its worker URL an option);

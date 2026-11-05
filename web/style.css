@@ -230,6 +230,7 @@ body.is-splitting iframe { pointer-events: none; }   /* the screen must not take
 .toolbar::after { content: ""; order: 5; flex: 1; }   /* pushes Share and the theme right */
 #share-btn, #theme-btn { order: 8; }
 .menu { display: contents; }
+.view-tabs { display: none; }
 .menu-btn, .menu-label { display: none; }
 /* Open, the hamburger stays a hamburger and takes the accent's border. */
 .menu-btn[aria-expanded="true"] { border-color: var(--accent); }
@@ -239,15 +240,14 @@ body.is-splitting iframe { pointer-events: none; }   /* the screen must not take
   .tagline { display: none; }
 }
 
-/* A phone or a narrow window (raylib-web-playground-plan P4): one column,
-   the screen first and as wide as the page, the editor under it, the console
-   last; the page scrolls instead of squeezing three panes into one screen.
-   The toolbar is one row -- the badge and title, then Run, Stop and the
-   menu -- with the status on a slim line under it when there is one, and
-   its controls big enough to tap. */
+/* A phone or a narrow window: the page fills the screen and does not scroll.
+   The toolbar is one row -- the badge and title, then Run, Stop and the menu
+   -- under it two tabs, Code and Run, and one view at a time: the editor, or
+   the screen (as wide as the page) over the console. The status bar stays at
+   the foot. Controls are big enough to tap. */
 @media (max-width: 800px) {
-  html, body { height: auto; }
-  body { min-height: 100%; }
+  html, body { height: 100%; overflow: hidden; }
+  body { height: 100dvh; }
   .toolbar { position: relative; flex-wrap: wrap; gap: 6px 8px; padding: 6px 10px; }
   .brand { flex: 1 1 auto; min-width: 0; margin: 0; }
   .brand h1 { overflow: hidden; text-overflow: ellipsis; }
@@ -258,9 +258,15 @@ body.is-splitting iframe { pointer-events: none; }   /* the screen must not take
   .menu-btn { display: inline-flex; order: 3; }
   .toolbar { flex-wrap: nowrap; }
   .toolbar::after { display: none; }
-  /* The page scrolls on a phone; the status bar stays at the foot of the
-     screen, where the frame rate can be read while a program runs. */
-  .statusbar { position: sticky; bottom: 0; z-index: 5; }
+  .view-tabs { display: flex; flex: none; border-bottom: 1px solid var(--border); background: var(--panel); }
+  .view-tabs button {
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 40px; font: inherit; color: var(--dim); background: none; border: 0;
+    border-bottom: 2px solid transparent; cursor: pointer; position: relative;
+  }
+  .view-tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+  .tab-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .tab-dot[hidden] { display: none; }
   /* The menu: a panel under the toolbar, its items full width and labelled. */
   .menu { display: none; }
   .toolbar[data-menu="open"] .menu {
@@ -276,11 +282,13 @@ body.is-splitting iframe { pointer-events: none; }   /* the screen must not take
   .menu-label { display: inline; }
   .spices-panel { position: static; width: auto; margin-top: 8px; }
   .panes { display: flex; flex-direction: column; }
-  .right { display: contents; }
   .split-handle { display: none; }
-  .screen-host { order: 1; width: 100%; height: auto; aspect-ratio: 16 / 9; border-bottom: 1px solid var(--border); }
-  .editor-pane { order: 2; height: 60vh; border-right: 0; border-bottom: 1px solid var(--border); }
-  .console { order: 3; flex: none; min-height: 8em; max-height: 40vh; }
+  .editor-pane { flex: 1; min-height: 0; }
+  .right { flex: 1; min-height: 0; }
+  .screen-host { width: 100%; height: auto; aspect-ratio: 16 / 9; border-bottom: 1px solid var(--border); }
+  .console { flex: 1; min-height: 0; }
+  body[data-view="code"] .right { display: none; }
+  body[data-view="run"] .editor-pane { display: none; }
 }
 
 /* screen.html, inside the iframe */

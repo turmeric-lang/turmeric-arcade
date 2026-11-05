@@ -84,7 +84,8 @@ pinned to the turmeric-spices commit the engine's packages were built from:
   returns at once, so keep the frame's state in globals or the closure.
 - **The pane is 480x270.** Keys and the mouse reach the program once the
   canvas has focus (a click on it). On a phone a tap is a click; there is no
-  keyboard, so the examples that need keys need one.
+  keyboard, so the examples that need keys need one. A phone shows two
+  views, Code and Run (the screen over the console); Run switches to Run.
 - **The FPS counter** in the status bar is the frames the program drew: one
   per `end-drawing`, counted where raylib swaps the buffer, twice a second.
   It shows only while something is being drawn.

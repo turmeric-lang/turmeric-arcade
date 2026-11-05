@@ -8,6 +8,7 @@ import { EXAMPLES } from './examples.js';
 import { createEditor } from './editor.js';
 import { initMinimap } from './minimap.js';
 import { initOutline } from './outline.js';
+import { registerHoverDocs } from './hover-docs.js';
 import { createLspClient } from './lsp-client.js';
 import { initSpicesMenu } from './spices-menu.js';
 import { sharedProgram, followEditor, shareLink, linkedExample, exampleUrl } from './share.js';
@@ -301,6 +302,9 @@ async function startEditor() {
                                 list: document.getElementById('symbols-list'),
                                 getLsp: async () => ((await startLsp()) ? lsp : null),
                                 onJump: () => setMenu(false) });
+        // A builtin's or library function's line of docs under the server's
+        // hover (hover-docs.js), from the table the engine ships.
+        registerHoverDocs(editor.monaco, '/engine/doc-names.json');
         minimap = initMinimap({ monaco: editor.monaco, editor: editor.editor, host: editor.host,
                                 button: document.getElementById('minimap-btn') });
         const once = editor.editor.onDidFocusEditorText(() => { once.dispose(); startLsp(); });

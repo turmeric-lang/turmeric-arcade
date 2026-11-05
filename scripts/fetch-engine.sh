@@ -70,8 +70,9 @@ OUT=$BUILD/wasm-arcade/wasm-jit
 
 DEST=$ROOT/web/public/engine
 mkdir -p "$DEST"
-# turmeric.{js,wasm} and lsp-worker.js: the editor's language server.
-for f in turmeric-jit.js turmeric-jit.wasm stdlib.data spices.js turmeric.js turmeric.wasm lsp-worker.js; do
+# turmeric.{js,wasm} and lsp-worker.js: the editor's language server;
+# doc-names.json: the one-line docs its hover adds (hover-docs.js).
+for f in turmeric-jit.js turmeric-jit.wasm stdlib.data spices.js turmeric.js turmeric.wasm lsp-worker.js doc-names.json; do
   cp "$OUT/$f" "$DEST/$f"
 done
 # The spice packages (spices/index.json, one <name>.json each), which the

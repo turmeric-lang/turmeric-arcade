@@ -29,6 +29,20 @@ for (const scheme of ['dark', 'light']) {
         await expect.poll(() => colourOf('defn')).toBe(rgb(p.keyword));
         expect(await colourOf('"hi"')).toBe(rgb(p.string));
         expect(await colourOf(';; note')).toBe(rgb(p.comment));
+        // The indent guides are faint, as Try Turmeric's: close to the
+        // canvas, not Monaco's stock grey (#404040 dark, #D3D3D3 light).
+        // (Indented deeper than the brackets nest: Monaco draws a bracket-pair
+        // guide, not an indent guide, where a bracket's column is.)
+        await page.evaluate(() => window.arcade.setSource('(defn main [] : int\n        (println "x")\n        0)\n'));
+        await expect.poll(() => page.evaluate(() => {
+            const bg = getComputedStyle(document.querySelector('.monaco-editor-background')).backgroundColor;
+            const guides = [...document.querySelectorAll('.core-guide')]
+                .map((e) => getComputedStyle(e).boxShadow.match(/^rgb\(([^)]*)\)/))
+                .filter(Boolean).map((m) => m[1].split(',').map(Number));
+            if (!guides.length) return null;
+            const b = bg.match(/\d+/g).map(Number);
+            return Math.max(...guides.flatMap((g) => g.map((c, i) => Math.abs(c - b[i]))));
+        })).toBeLessThan(32);
     });
 }
 
@@ -39,4 +53,51 @@ test('if Monaco cannot load, the textarea is the editor, and it is shown', async
     await expect(page.locator('#editor-pane')).toHaveAttribute('data-editor', 'ready');
     await expect(page.locator('#editor')).toBeVisible();
     expect(await page.locator('#editor').inputValue()).toContain('hello-raylib');
+    // A textarea has no minimap, so no button for one.
+    await expect(page.locator('#minimap-btn')).toBeHidden();
+});
+
+// The minimap (minimap.js): on where the editor is wide enough for it, off
+// where it is not, and the visitor's choice, once made, wins and is kept.
+const minimap = (page) => page.evaluate(() => window.arcade.minimap());
+async function openMonaco(page) {
+    await page.goto('/');
+    await page.waitForFunction(() => window.arcade && window.arcade.editorKind === 'monaco');
+}
+
+test('the minimap shows beside a wide editor; the button hides it, and that is kept', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await openMonaco(page);
+    const btn = page.locator('#minimap-btn');
+    await expect.poll(async () => (await minimap(page)).on).toBe(true);
+    await expect(page.locator('.monaco-editor .minimap')).toBeVisible();
+    await expect(btn).toBeVisible();
+    await expect(btn).toHaveAttribute('aria-pressed', 'true');
+    await expect(btn).toHaveAttribute('title', 'Hide the minimap');
+    await btn.click();
+    expect(await minimap(page)).toEqual({ on: false, preference: false });
+    await expect(btn).toHaveAttribute('aria-pressed', 'false');
+    await page.reload();
+    await page.waitForFunction(() => window.arcade && window.arcade.editorKind === 'monaco');
+    await page.waitForTimeout(300);
+    expect(await minimap(page)).toEqual({ on: false, preference: false });
+    await page.locator('#minimap-btn').click();
+    expect(await minimap(page)).toEqual({ on: true, preference: true });
+});
+
+test('a narrow editor starts without it, and goes back to the width rule when widened', async ({ page }) => {
+    await page.setViewportSize({ width: 1000, height: 700 });
+    await openMonaco(page);
+    await page.waitForTimeout(300);
+    expect(await minimap(page)).toEqual({ on: false, preference: null });
+    await expect(page.locator('#minimap-btn')).toHaveAttribute('aria-pressed', 'false');
+    // Wider window, wider editor: the width rule turns it on by itself.
+    await page.setViewportSize({ width: 1400, height: 700 });
+    await expect.poll(async () => (await minimap(page)).on).toBe(true);
+    // Back to narrow, it goes again -- no choice has been made.
+    await page.setViewportSize({ width: 1000, height: 700 });
+    await expect.poll(async () => (await minimap(page)).on).toBe(false);
+    // Asked for, it stays, narrow or not.
+    await page.locator('#minimap-btn').click();
+    expect(await minimap(page)).toEqual({ on: true, preference: true });
 });

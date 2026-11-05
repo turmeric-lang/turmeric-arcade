@@ -4,10 +4,11 @@
 # target builds the engine: the JSPI browser JIT module with raylib linked in
 # (tools/wasm-jit/arcade/), the spice packages beside it, and the language
 # server's worker with the stock module it runs (turmeric#1445), and since
-# turmeric#1449 each packaged spice's own C (raygui) linked in.  A commit on
+# turmeric#1449 each packaged spice's own C (raygui) linked in, and since
+# turmeric#1455 doc-names.json, the hover's one-line docs.  A commit on
 # main: no release tag carries the target yet (v0.73.0 predates it), so this
 # moves to the first one that does.
-TURMERIC_REF=0d1756940ce72d27982acebf390703c2be146f12
+TURMERIC_REF=e6b535539a71b062e0bd2b575a5bbd9798f066d2
 # The turmeric-spices commit whose spices (raylib math raygui ecs
 # ecs-raylib) are packaged beside the engine; turmeric-spices#133, whose ecs
 # reads a stdlib vector right on wasm32.

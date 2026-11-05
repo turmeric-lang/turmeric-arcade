@@ -6,6 +6,9 @@
 
 import { EXAMPLES } from './examples.js';
 import { createEditor } from './editor.js';
+import { initMinimap } from './minimap.js';
+import { initOutline } from './outline.js';
+import { registerHoverDocs } from './hover-docs.js';
 import { createLspClient } from './lsp-client.js';
 import { initSpicesMenu } from './spices-menu.js';
 import { sharedProgram, followEditor, shareLink, linkedExample, exampleUrl } from './share.js';
@@ -15,9 +18,19 @@ import { registerSW } from 'virtual:pwa-register';
 
 // The textarea until Monaco has loaded (editor.js), then Monaco.
 let editor = null;
+let minimap = null;   // minimap.js, with Monaco
+let outline = null;   // outline.js, with Monaco
+
 const textarea = document.getElementById('editor');
 const runBtn = document.getElementById('run-btn');
 const runAgain = document.getElementById('run-again');   // " again", on a wide screen
+
+// The Run button's shortcut, as this keyboard spells it: Cmd on a Mac.
+if (/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) {
+    runBtn.title = 'Run (\u2318Enter)';
+    runBtn.setAttribute('aria-keyshortcuts', 'Meta+Enter');
+    runBtn.querySelector('.kbd-mod').innerHTML = '<svg class="icon"><use href="#i-command"/></svg>';
+}
 const stopBtn = document.getElementById('stop-btn');
 const examples = document.getElementById('examples');
 const status = document.getElementById('status');
@@ -174,6 +187,7 @@ document.addEventListener('click', (e) => { if (!toolbar.contains(e.target)) set
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
 examples.addEventListener('change', () => setMenu(false));
 document.getElementById('share-btn').addEventListener('click', () => setMenu(false));
+document.getElementById('minimap-btn').addEventListener('click', () => setMenu(false));
 stopBtn.addEventListener('click', () => stop());
 
 for (const [key, ex] of Object.entries(EXAMPLES)) {
@@ -282,6 +296,17 @@ async function startEditor() {
         editor.editor.onDidChangeCursorPosition((e) => show(e.position));
     }
     if (editor.kind === 'monaco') {
+        const symbols = document.getElementById('symbols');
+        symbols.hidden = false;
+        outline = initOutline({ monaco: editor.monaco, editor: editor.editor, details: symbols,
+                                list: document.getElementById('symbols-list'),
+                                getLsp: async () => ((await startLsp()) ? lsp : null),
+                                onJump: () => setMenu(false) });
+        // A builtin's or library function's line of docs under the server's
+        // hover (hover-docs.js), from the table the engine ships.
+        registerHoverDocs(editor.monaco, '/engine/doc-names.json');
+        minimap = initMinimap({ monaco: editor.monaco, editor: editor.editor, host: editor.host,
+                                button: document.getElementById('minimap-btn') });
         const once = editor.editor.onDidFocusEditorText(() => { once.dispose(); startLsp(); });
     }
     examples.addEventListener('change', () => {
@@ -295,6 +320,11 @@ async function startEditor() {
         setSource: (src) => { editor.setValue(src); },
         getSource: () => editor.getValue(),
         get editorKind() { return editor.kind; },
+        // Whether the minimap is showing, and the visitor's stored choice.
+        minimap: () => (minimap ? { on: minimap.enabled(), preference: minimap.preference() } : null),
+        // The Symbols panel's rows as drawn, and its state ('ok', 'empty',
+        // 'loading', 'unavailable').
+        outline: () => (outline ? { state: outline.state(), rows: outline.rows() } : null),
         clearConsole: () => { consoleEl.replaceChildren(); },
         setView,
         get lastBoot() { return lastBoot; },

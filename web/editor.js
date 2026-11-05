@@ -8,6 +8,7 @@
 // start only for those languages, which the arcade never opens.
 
 import { configureTurmeric } from './editor-language.js';
+import { MINIMAP_OPTIONS } from './minimap.js';
 // The Turmeric token colours, written down once in turmeric's
 // web/editor-palette.json -- Try Turmeric's Monaco themes and the VS Code,
 // Vim and Emacs packs all carry them -- and copied here verbatim.  Update by
@@ -72,9 +73,56 @@ function defineTheme(monaco) {
             'editorLineNumber.foreground': v('--dim', '#9a97a8'),
             'editorCursor.foreground': v('--accent', '#e6a23c'),
             ...bracketColors(RAINBOW[theme]),
+            ...minimapColors(v, theme),
+            ...indentGuideColors(v, theme),
         },
     });
     return name;
+}
+
+// The minimap's colours, after Try's minimapColors: the strip is part of the
+// editor's canvas, its slider is the page's dim grey, and its marks wash over
+// the shape of the file rather than hide it -- except errors, which are why
+// you look at it.  (#RRGGBB plus an alpha byte: Monaco takes no rgba().)
+function minimapColors(v, theme) {
+    const bg = v('--bg', theme === 'light' ? '#fbf8f2' : '#15141a');
+    const dim = v('--dim', theme === 'light' ? '#6b6458' : '#9a97a8');
+    const accent = v('--accent', theme === 'light' ? '#a8650f' : '#e6a23c');
+    const err = v('--err', theme === 'light' ? '#c62828' : '#ff7b72');
+    const a = (hex, alpha) => (hex.length === 4 ? `#${[...hex.slice(1)].map((c) => c + c).join('')}` : hex) + alpha;
+    return {
+        'minimap.background': bg,
+        'minimapSlider.background': a(dim, '33'),
+        'minimapSlider.hoverBackground': a(dim, '4D'),
+        'minimapSlider.activeBackground': a(dim, '73'),
+        'minimap.errorHighlight': err,
+        'minimap.warningHighlight': accent,
+        'minimap.findMatchHighlight': a(accent, '99'),
+        'minimap.selectionHighlight': a(dim, '80'),
+        'minimap.selectionOccurrenceHighlight': a(dim, '66'),
+    };
+}
+
+// The indent guides, as faint as Try Turmeric's: Try lifts them off its
+// canvas by a tenth of the way to the text (dark #222018 on #0C0A08) and the
+// active one by about a quarter (#3D3A2F); Monaco's stock #404040 is three
+// times as loud on this page.  Taken as the same fractions of the page's own
+// --bg to --fg, so they follow the palette; on the light page, whose canvas
+// is Try's, they come out as light as Try's #E3D9C8 and #C0B099.
+const GUIDE_MIX = { dark: [0.10, 0.22], light: [0.11, 0.27] };
+function indentGuideColors(v, theme) {
+    const rgb = (hex) => {
+        const h = hex.length === 4 ? [...hex.slice(1)].map((c) => c + c).join('') : hex.slice(1, 7);
+        return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+    };
+    const bg = rgb(v('--bg', theme === 'light' ? '#fbf8f2' : '#15141a'));
+    const fg = rgb(v('--fg', theme === 'light' ? '#24201a' : '#e8e6ef'));
+    const mix = (t) => '#' + bg.map((b, i) => Math.round(b + (fg[i] - b) * t).toString(16).padStart(2, '0')).join('');
+    const [quiet, active] = GUIDE_MIX[theme];
+    return {
+        'editorIndentGuide.background1': mix(quiet),
+        'editorIndentGuide.activeBackground1': mix(active),
+    };
 }
 
 function textareaEditor(textarea) {
@@ -135,10 +183,10 @@ async function createEditorIn(textarea) {
         tabSize: 2,
         insertSpaces: true,
         detectIndentation: false,
-        // Try Turmeric's editor options (its main.js), less the minimap
-        // (raylib-web-playground-plan's editor phase has it next) and the
-        // tabs and REPL it serves.
-        minimap: { enabled: false },
+        // Try Turmeric's editor options (its main.js), less the tabs and REPL
+        // it serves.  The minimap is switched on by minimap.js, which
+        // measures the editor first.
+        minimap: MINIMAP_OPTIONS,
         wordWrap: 'on',
         folding: true,
         showFoldingControls: 'mouseover',
@@ -181,6 +229,7 @@ async function createEditorIn(textarea) {
         kind: 'monaco',
         monaco,
         editor,
+        host,
         getValue: () => editor.getValue(),
         setValue: (s) => editor.setValue(s),
         focus: () => editor.focus(),

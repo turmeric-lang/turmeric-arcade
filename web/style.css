@@ -228,7 +228,10 @@ body.is-splitting iframe { pointer-events: none; }   /* the screen must not take
 #stop-btn { order: 2; }
 .examples, .spices { order: 3; }
 .toolbar::after { content: ""; order: 5; flex: 1; }   /* pushes Share and the theme right */
-#share-btn, #theme-btn { order: 8; }
+#minimap-btn, #share-btn, #theme-btn { order: 8; }
+#minimap-btn[hidden] { display: none; }
+/* On, the minimap's button takes the accent, as the open menu's does. */
+#minimap-btn[aria-pressed="true"] { color: var(--accent); }
 .menu { display: contents; }
 .view-tabs { display: none; }
 .menu-btn, .menu-label { display: none; }
@@ -289,6 +292,11 @@ body.is-splitting iframe { pointer-events: none; }   /* the screen must not take
   .console { flex: 1; min-height: 0; }
   body[data-view="code"] .right { display: none; }
   body[data-view="run"] .editor-pane { display: none; }
+}
+
+/* A phone: no minimap (minimap.js), so no button for it. */
+@media (max-width: 600px) {
+  #minimap-btn { display: none; }
 }
 
 /* screen.html, inside the iframe */

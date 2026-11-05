@@ -142,6 +142,9 @@ test.describe('on a phone', () => {
             await expect(page.locator(sel)).toBeVisible();
             expect((await box(sel)).height).toBeGreaterThanOrEqual(36);
         }
+        // No minimap on a phone, and no button for one.
+        await expect(page.locator('#minimap-btn')).toBeHidden();
+        expect((await page.evaluate(() => window.arcade.minimap())).on).toBe(false);
         // Picking an example closes it.
         await page.selectOption('#examples', 'pong');
         await expect(page.locator('#examples')).toBeHidden();

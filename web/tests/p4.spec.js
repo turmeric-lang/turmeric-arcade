@@ -138,10 +138,12 @@ test.describe('on a phone', () => {
         await expect(page.locator('#examples')).toBeHidden();
         await page.locator('#menu-btn').tap();
         await expect(page.locator('#menu-btn')).toHaveAttribute('aria-expanded', 'true');
-        for (const sel of ['#examples', '#spices > summary', '#share-btn', '#theme-btn']) {
+        for (const sel of ['#examples', '#spices > summary', '#symbols > summary', '#share-btn', '#theme-btn']) {
             await expect(page.locator(sel)).toBeVisible();
             expect((await box(sel)).height).toBeGreaterThanOrEqual(36);
         }
+        // No keycaps on Run where there is no keyboard to press them on.
+        await expect(page.locator('#run-btn .run-kbd')).toBeHidden();
         // No minimap on a phone, and no button for one.
         await expect(page.locator('#minimap-btn')).toBeHidden();
         expect((await page.evaluate(() => window.arcade.minimap())).on).toBe(false);
